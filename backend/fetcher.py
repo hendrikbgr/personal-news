@@ -190,12 +190,14 @@ async def _process_entry(entry, feed_id: str, category: str) -> bool:
     description = _clean_html(description_html)
 
     image_url = extracted.get("image_url") or _first_image(entry) or ""
-    content = extracted.get("content") or description
+    full_content = extracted.get("content") or ""
+    content = full_content or description
     author = extracted.get("author") or getattr(entry, "author", "") or ""
     word_count = extracted.get("word_count") or 0
     summary = extracted.get("summary") or description
     keywords = extracted.get("keywords") or ""
     published_at = _parse_date(entry) or datetime.now(timezone.utc).isoformat()
+    has_full_article = bool(full_content and len(full_content) > len(description) + 50)
 
     try:
         await pb.create_record("articles", {
@@ -213,7 +215,7 @@ async def _process_entry(entry, feed_id: str, category: str) -> bool:
             "word_count": word_count,
             "is_read": False,
             "is_saved": False,
-            "fetch_status": "fetched" if content else "partial",
+            "fetch_status": "full" if has_full_article else "summary",
         })
         return True
     except Exception as e:

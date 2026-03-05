@@ -90,6 +90,15 @@ html, body {
   }
 }
 
+/* ── Hidden scrollbar (scroll without visible track) ─────────────────── */
+.sidebar-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Scrollbar (desktop only) ─────────────────────────────────────────── */
 @media (hover: hover) {
   ::-webkit-scrollbar {
@@ -151,6 +160,31 @@ html, body {
 }
 .animate-slideUp {
   animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* ── Save button (Instagram-like pop) ─────────────────────────────────── */
+@keyframes savePop {
+  0%   { transform: scale(1); }
+  15%  { transform: scale(0.7); }
+  40%  { transform: scale(1.35); }
+  70%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+.save-pop {
+  animation: savePop 0.45s cubic-bezier(0.17, 0.89, 0.32, 1.28) forwards;
+}
+
+@keyframes saveBurst {
+  0%   { width: 0; height: 0; opacity: 0.6; border-width: 3px; }
+  100% { width: 32px; height: 32px; opacity: 0; border-width: 1px; }
+}
+.save-burst {
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  animation: saveBurst 0.45s ease-out forwards;
+}
+.save-burst-surface {
+  border: 3px solid rgba(99, 102, 241, 0.5);
+  animation: saveBurst 0.45s ease-out forwards;
 }
 
 /* ── Shimmer loading ──────────────────────────────────────────────────── */

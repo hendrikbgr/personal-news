@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Bookmark, BookmarkCheck, Clock, ExternalLink } from "lucide-react";
+import { Clock, ExternalLink, FileText, Rss } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Article } from "@/lib/types";
 import { toggleSaved } from "@/lib/api";
 import { getCategoryStyle } from "@/lib/categoryColors";
 import CategoryBadge from "./CategoryBadge";
+import SaveButton from "./SaveButton";
 
 interface Props {
   article: Article;
@@ -50,7 +51,7 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
       style={{ boxShadow: `0 4px 24px ${s.glow}` }}
     >
       {/* Mobile: horizontal layout */}
-      <div className="flex sm:hidden">
+      <div className="relative flex sm:hidden">
         {/* Thumbnail */}
         <div className="relative w-28 flex-shrink-0 bg-white/20">
           {article.image_url ? (
@@ -72,21 +73,23 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
           )}
         </div>
 
+        {/* Corner gradient + save button — top right of card */}
+        <div
+          className="absolute top-0 right-0 w-16 h-16 z-10 pointer-events-none"
+          style={{ background: "linear-gradient(to bottom left, rgba(0,0,0,0.35) 0%, transparent 60%)" }}
+        />
+        <SaveButton
+          saved={saved}
+          onToggle={handleSave}
+          size="sm"
+          className="absolute top-1.5 right-1.5 z-20 p-1.5 rounded-full transition-all active:scale-110"
+        />
+
         {/* Content */}
         <div className="flex-1 min-w-0 p-3 flex flex-col justify-between gap-1.5">
           <div>
-            <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1">
               <CategoryBadge category={article.category} />
-              <button
-                onClick={handleSave}
-                className="p-1.5 -mr-1 rounded-full active:bg-white/40 transition-all flex-shrink-0"
-              >
-                {saved ? (
-                  <BookmarkCheck className="w-4 h-4 text-indigo-600" />
-                ) : (
-                  <Bookmark className="w-4 h-4 text-gray-400" />
-                )}
-              </button>
             </div>
             <h3 className="font-semibold text-gray-800 text-sm leading-snug line-clamp-2">
               {article.title}
@@ -99,6 +102,11 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
                 <Clock className="w-3 h-3" />
                 {readTime}
               </span>
+            )}
+            {article.fetch_status === "full" ? (
+              <FileText className="w-3 h-3 text-emerald-500 flex-shrink-0" title="Full article" />
+            ) : (
+              <Rss className="w-3 h-3 text-amber-500 flex-shrink-0" title="Summary only" />
             )}
           </div>
         </div>
@@ -122,17 +130,16 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
               {article.expand?.feed_id?.emoji ?? "📰"}
             </div>
           )}
-          <button
-            onClick={handleSave}
-            className="absolute top-2 right-2 p-1.5 rounded-full glass transition-all hover:scale-110"
-            title={saved ? "Unsave" : "Save"}
-          >
-            {saved ? (
-              <BookmarkCheck className="w-4 h-4 text-indigo-600" />
-            ) : (
-              <Bookmark className="w-4 h-4 text-gray-500" />
-            )}
-          </button>
+          <div
+            className="absolute top-0 right-0 w-24 h-24 pointer-events-none"
+            style={{ background: "linear-gradient(to bottom left, rgba(0,0,0,0.35) 0%, transparent 60%)" }}
+          />
+          <SaveButton
+            saved={saved}
+            onToggle={handleSave}
+            size="sm"
+            className="absolute top-2 right-2 z-10 p-1.5 rounded-full transition-all hover:scale-110"
+          />
           {!article.is_read && (
             <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-indigo-500 shadow-lg" />
           )}
@@ -165,6 +172,17 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {readTime}
+              </span>
+            )}
+            {article.fetch_status === "full" ? (
+              <span className="flex items-center gap-1 text-emerald-600" title="Full article available">
+                <FileText className="w-3 h-3" />
+                Full
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-amber-600" title="RSS summary only">
+                <Rss className="w-3 h-3" />
+                Summary
               </span>
             )}
             <ExternalLink className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />

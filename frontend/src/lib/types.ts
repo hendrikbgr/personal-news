@@ -47,6 +47,7 @@ export interface Category {
   name: string;
   emoji: string;
   color: string;
+  pb_id?: string;
 }
 
 export interface FetchStatus {

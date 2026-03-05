@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { SWRConfig } from "swr";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import NewsGrid from "@/components/NewsGrid";
@@ -73,31 +72,16 @@ export default function Home() {
         </div>
 
         <div className="flex gap-3 flex-1 min-h-0 overflow-hidden">
-          {/* Sidebar collapse toggle (desktop only) */}
-          <button
-            onClick={() => setSidebarOpen((v) => !v)}
-            className="hidden md:flex items-start pt-3 flex-shrink-0"
-            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            <span className="glass p-1.5 rounded-xl hover:bg-white/40 transition-all">
-              {sidebarOpen ? (
-                <PanelLeftClose className="w-4 h-4 text-gray-500" />
-              ) : (
-                <PanelLeftOpen className="w-4 h-4 text-gray-500" />
-              )}
-            </span>
-          </button>
-
           {/* Sidebar (desktop) */}
-          {sidebarOpen && (
-            <aside className="w-60 flex-shrink-0 hidden md:block">
-              <Sidebar
-                selectedCategory={selectedCategory}
-                onSelectCategory={setSelectedCategory}
-                onFeedsChanged={handleFeedsChanged}
-              />
-            </aside>
-          )}
+          <aside className={`flex-shrink-0 hidden md:block ${sidebarOpen ? "w-60" : "w-auto"}`}>
+            <Sidebar
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              onFeedsChanged={handleFeedsChanged}
+              collapsed={!sidebarOpen}
+              onToggleCollapse={() => setSidebarOpen((v) => !v)}
+            />
+          </aside>
 
           {/* Main content */}
           <main className="flex-1 min-w-0 flex flex-col overflow-hidden">

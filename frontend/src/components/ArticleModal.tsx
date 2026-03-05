@@ -4,18 +4,19 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import {
   X,
-  Bookmark,
-  BookmarkCheck,
   ExternalLink,
   Clock,
   User,
   Calendar,
   ChevronLeft,
+  FileText,
+  Rss,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Article } from "@/lib/types";
 import { getArticle, toggleSaved } from "@/lib/api";
 import CategoryBadge from "./CategoryBadge";
+import SaveButton from "./SaveButton";
 
 interface Props {
   articleId: string;
@@ -87,16 +88,13 @@ export default function ArticleModal({ articleId, onClose }: Props) {
           <div className="flex items-center gap-1.5">
             {article && (
               <>
-                <button
-                  onClick={handleSave}
+                <SaveButton
+                  saved={saved}
+                  onToggle={handleSave}
+                  size="lg"
+                  variant="surface"
                   className="p-2 rounded-xl active:bg-white/40 transition-all"
-                >
-                  {saved ? (
-                    <BookmarkCheck className="w-5 h-5 text-indigo-600" />
-                  ) : (
-                    <Bookmark className="w-5 h-5 text-gray-500" />
-                  )}
-                </button>
+                />
                 <a
                   href={article.url}
                   target="_blank"
@@ -123,17 +121,13 @@ export default function ArticleModal({ articleId, onClose }: Props) {
           <div className="flex items-center gap-2">
             {article && (
               <>
-                <button
-                  onClick={handleSave}
+                <SaveButton
+                  saved={saved}
+                  onToggle={handleSave}
+                  size="md"
+                  variant="surface"
                   className="p-2 rounded-xl glass hover:bg-white/40 transition-all"
-                  title={saved ? "Unsave" : "Save for later"}
-                >
-                  {saved ? (
-                    <BookmarkCheck className="w-4 h-4 text-indigo-600" />
-                  ) : (
-                    <Bookmark className="w-4 h-4 text-gray-500" />
-                  )}
-                </button>
+                />
                 <a
                   href={article.url}
                   target="_blank"
@@ -201,6 +195,17 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                   <span className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
                     {readTime}
+                  </span>
+                )}
+                {article.fetch_status === "full" ? (
+                  <span className="flex items-center gap-1 text-emerald-600">
+                    <FileText className="w-3.5 h-3.5" />
+                    Full article
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <Rss className="w-3.5 h-3.5" />
+                    RSS summary
                   </span>
                 )}
               </div>

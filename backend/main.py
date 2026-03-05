@@ -8,7 +8,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import PORT
@@ -60,6 +60,46 @@ async def get_feeds(category: Optional[str] = None):
     return result.get("items", [])
 
 
+@app.post("/api/feeds")
+async def create_feed(data: dict = Body(...)):
+    """Create a new feed."""
+    required = {"name", "url", "category"}
+    if not required.issubset(data.keys()):
+        raise HTTPException(status_code=400, detail=f"Missing required fields: {required - data.keys()}")
+    payload = {
+        "name": data["name"],
+        "url": data["url"],
+        "category": data["category"],
+        "source": data.get("source", ""),
+        "emoji": data.get("emoji", "📰"),
+        "is_active": data.get("is_active", False),
+    }
+    return await pb.create_record("feeds", payload)
+
+
+@app.patch("/api/feeds/{feed_id}")
+async def update_feed(feed_id: str, data: dict = Body(...)):
+    """Update an existing feed."""
+    try:
+        await pb.get_record("feeds", feed_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Feed not found")
+    allowed = {"name", "url", "category", "source", "emoji", "is_active"}
+    payload = {k: v for k, v in data.items() if k in allowed}
+    return await pb.update_record("feeds", feed_id, payload)
+
+
+@app.delete("/api/feeds/{feed_id}")
+async def delete_feed(feed_id: str):
+    """Delete a feed."""
+    try:
+        await pb.get_record("feeds", feed_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Feed not found")
+    await pb.delete_record("feeds", feed_id)
+    return {"deleted": feed_id}
+
+
 @app.post("/api/feeds/{feed_id}/toggle")
 async def toggle_feed(feed_id: str, background_tasks: BackgroundTasks):
     """Enable or disable a feed. Immediately triggers a fetch when enabling."""
@@ -72,7 +112,6 @@ async def toggle_feed(feed_id: str, background_tasks: BackgroundTasks):
     updated = await pb.update_record("feeds", feed_id, {"is_active": new_state})
 
     if new_state:
-        # Kick off a background fetch immediately
         background_tasks.add_task(_fetch_single_feed, updated)
 
     return updated
@@ -201,8 +240,59 @@ async def get_status():
 
 @app.get("/api/categories")
 async def get_categories():
+    """List all categories from PocketBase, falling back to hardcoded list."""
+    try:
+        result = await pb.list_records("categories", per_page=100, sort="name")
+        items = result.get("items", [])
+        if items:
+            return [{"id": c["slug"], "name": c["name"], "emoji": c["emoji"], "color": c["color"],
+                      "pb_id": c["id"]} for c in items]
+    except Exception:
+        pass
     from feeds_data import CATEGORIES
     return CATEGORIES
+
+
+@app.post("/api/categories")
+async def create_category(data: dict = Body(...)):
+    """Create a new category."""
+    required = {"slug", "name"}
+    if not required.issubset(data.keys()):
+        raise HTTPException(status_code=400, detail=f"Missing required fields: {required - data.keys()}")
+    payload = {
+        "slug": data["slug"],
+        "name": data["name"],
+        "emoji": data.get("emoji", "📂"),
+        "color": data.get("color", "blue"),
+    }
+    record = await pb.create_record("categories", payload)
+    return {"id": record["slug"], "name": record["name"], "emoji": record["emoji"],
+            "color": record["color"], "pb_id": record["id"]}
+
+
+@app.patch("/api/categories/{pb_id}")
+async def update_category(pb_id: str, data: dict = Body(...)):
+    """Update an existing category."""
+    try:
+        await pb.get_record("categories", pb_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Category not found")
+    allowed = {"slug", "name", "emoji", "color"}
+    payload = {k: v for k, v in data.items() if k in allowed}
+    record = await pb.update_record("categories", pb_id, payload)
+    return {"id": record["slug"], "name": record["name"], "emoji": record["emoji"],
+            "color": record["color"], "pb_id": record["id"]}
+
+
+@app.delete("/api/categories/{pb_id}")
+async def delete_category(pb_id: str):
+    """Delete a category."""
+    try:
+        await pb.get_record("categories", pb_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Category not found")
+    await pb.delete_record("categories", pb_id)
+    return {"deleted": pb_id}
 
 
 if __name__ == "__main__":

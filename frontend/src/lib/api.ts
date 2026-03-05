@@ -19,6 +19,15 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export const getFeeds = (category?: string): Promise<Feed[]> =>
   req(`/api/feeds${category ? `?category=${category}` : ""}`);
 
+export const createFeed = (data: Partial<Feed>): Promise<Feed> =>
+  req("/api/feeds", { method: "POST", body: JSON.stringify(data) });
+
+export const updateFeed = (feedId: string, data: Partial<Feed>): Promise<Feed> =>
+  req(`/api/feeds/${feedId}`, { method: "PATCH", body: JSON.stringify(data) });
+
+export const deleteFeed = (feedId: string): Promise<{ deleted: string }> =>
+  req(`/api/feeds/${feedId}`, { method: "DELETE" });
+
 export const toggleFeed = (feedId: string): Promise<Feed> =>
   req(`/api/feeds/${feedId}/toggle`, { method: "POST" });
 
@@ -62,6 +71,15 @@ export const resetSaved = (): Promise<{ cleared: number }> =>
 // ── Misc ───────────────────────────────────────────────────────────────────
 
 export const getCategories = (): Promise<Category[]> => req("/api/categories");
+
+export const createCategory = (data: { slug: string; name: string; emoji?: string; color?: string }): Promise<Category> =>
+  req("/api/categories", { method: "POST", body: JSON.stringify(data) });
+
+export const updateCategory = (pbId: string, data: Partial<Category>): Promise<Category> =>
+  req(`/api/categories/${pbId}`, { method: "PATCH", body: JSON.stringify(data) });
+
+export const deleteCategory = (pbId: string): Promise<{ deleted: string }> =>
+  req(`/api/categories/${pbId}`, { method: "DELETE" });
 
 export const triggerRefresh = (): Promise<{ status: string }> =>
   req("/api/refresh", { method: "POST" });

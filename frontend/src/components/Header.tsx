@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Search, RefreshCw, Bookmark, Trash2, X, Menu } from "lucide-react";
-import { triggerRefresh, getStatus, resetSaved } from "@/lib/api";
+import Link from "next/link";
+import { Search, RefreshCw, Bookmark, X, Menu, Settings } from "lucide-react";
+import { triggerRefresh, getStatus } from "@/lib/api";
 import type { FetchStatus } from "@/lib/types";
 
 interface Props {
@@ -24,8 +25,6 @@ export default function Header({
   onOpenMobileSidebar,
 }: Props) {
   const [refreshing, setRefreshing] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
   const { data: status } = useSWR<FetchStatus>("status", getStatus, {
@@ -40,17 +39,6 @@ export default function Header({
       onRefreshed?.();
     } finally {
       setTimeout(() => setRefreshing(false), 2000);
-    }
-  }
-
-  async function handleResetSaved() {
-    setResetting(true);
-    try {
-      await resetSaved();
-      onRefreshed?.();
-    } finally {
-      setResetting(false);
-      setShowResetConfirm(false);
     }
   }
 
@@ -119,7 +107,11 @@ export default function Header({
           }`}
           title="Show saved articles"
         >
-          <Bookmark className="w-4 h-4" />
+          <Bookmark
+            className={`w-4 h-4 transition-all duration-200 ${
+              showSaved ? "fill-indigo-500 text-indigo-500" : "fill-transparent"
+            }`}
+          />
           <span className="hidden md:block">Saved</span>
         </button>
 
@@ -133,49 +125,15 @@ export default function Header({
           <span className="hidden md:block">Refresh</span>
         </button>
 
-        <button
-          onClick={() => setShowResetConfirm(true)}
-          className="hidden sm:flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 hover:bg-red-50/60 hover:text-red-600 active:bg-red-50/80 transition-all"
-          title="Clear all saved articles"
+        <Link
+          href="/manage"
+          className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 hover:bg-white/40 active:bg-white/50 transition-all"
+          title="Manage feeds & categories"
         >
-          <Trash2 className="w-4 h-4" />
-          <span className="hidden md:block">Reset Saved</span>
-        </button>
+          <Settings className="w-4 h-4" />
+          <span className="hidden md:block">Manage</span>
+        </Link>
       </div>
-
-      {showResetConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm"
-          onClick={() => setShowResetConfirm(false)}
-        >
-          <div
-            className="glass-strong rounded-t-3xl sm:rounded-3xl p-6 w-full sm:max-w-sm sm:mx-4 shadow-2xl animate-fadeInUp"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-gray-800 mb-2">
-              Delete all articles?
-            </h3>
-            <p className="text-sm text-gray-500 mb-6">
-              This will permanently delete every article from the database. They will be re-fetched on the next refresh.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                className="px-4 py-2.5 rounded-xl glass text-sm font-medium text-gray-600 hover:bg-white/40 active:bg-white/50 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleResetSaved}
-                disabled={resetting}
-                className="px-4 py-2.5 rounded-xl bg-red-500/90 text-white text-sm font-medium hover:bg-red-600 active:bg-red-700 transition-all disabled:opacity-60"
-              >
-                {resetting ? "Clearing…" : "Yes, clear all"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Status dot */}
       {status?.scheduler_running && (

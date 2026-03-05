@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { ChevronDown, ChevronRight, Rss } from "lucide-react";
+import { ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Rss } from "lucide-react";
 import type { Category, Feed } from "@/lib/types";
 import { getFeeds, getCategories, toggleFeed } from "@/lib/api";
 import { getCategoryStyle } from "@/lib/categoryColors";
@@ -11,9 +11,11 @@ interface Props {
   selectedCategory: string | null;
   onSelectCategory: (c: string | null) => void;
   onFeedsChanged?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsChanged }: Props) {
+export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsChanged, collapsed, onToggleCollapse }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
@@ -49,13 +51,49 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
     return acc;
   }, {});
 
+  if (collapsed) {
+    return (
+      <div className="glass-strong rounded-3xl p-2 h-full flex flex-col items-center gap-2">
+        <button
+          onClick={onToggleCollapse}
+          className="p-2 rounded-xl hover:bg-white/40 transition-all"
+          title="Expand sidebar"
+        >
+          <PanelLeftOpen className="w-4 h-4 text-gray-500" />
+        </button>
+        <div className="flex flex-col gap-1.5 items-center mt-1">
+          <button
+            onClick={() => onSelectCategory(null)}
+            className={`p-1.5 rounded-lg transition-all ${
+              selectedCategory === null ? "glass-strong shadow-sm" : "hover:bg-white/30"
+            }`}
+            title="All News"
+          >
+            <span className="text-base">📋</span>
+          </button>
+          {(categories ?? []).map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => onSelectCategory(cat.id)}
+              className={`p-1.5 rounded-lg transition-all ${
+                selectedCategory === cat.id ? "glass-strong shadow-sm" : "hover:bg-white/30"
+              }`}
+              title={cat.name}
+            >
+              <span className="text-base">{cat.emoji}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <aside className="glass-strong rounded-3xl p-4 h-full overflow-y-auto flex flex-col gap-1">
+    <div className="glass-strong rounded-3xl p-4 h-full flex flex-col gap-1 overflow-y-auto sidebar-scroll">
       <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 px-2 mb-2">
         Categories
       </h2>
 
-      {/* All */}
       <button
         onClick={() => onSelectCategory(null)}
         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
@@ -138,12 +176,21 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
         );
       })}
 
-      <div className="mt-auto pt-4 border-t border-white/30">
+      <div className="mt-auto pt-4 border-t border-white/30 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-gray-400 px-2">
           <Rss className="w-3.5 h-3.5" />
           <span>Enable feeds to start reading</span>
         </div>
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className="p-1.5 rounded-xl hover:bg-white/40 transition-all flex-shrink-0"
+            title="Collapse sidebar"
+          >
+            <PanelLeftClose className="w-4 h-4 text-gray-500" />
+          </button>
+        )}
       </div>
-    </aside>
+    </div>
   );
 }

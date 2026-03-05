@@ -27,15 +27,18 @@
 - **Full-article extraction** — fetches and parses complete article text, images, authors, and keywords via newspaper4k
 - **AI-powered summaries** — automatic NLP summaries and keyword extraction for every article
 - **Liquid-glass UI** — translucent frosted-glass design with an animated pastel gradient background
-- **Collapsible sidebar** — toggle the category panel to switch between 2- and 3-column layouts
-- **Bookmark & save** — save articles for later and filter your reading list instantly
+- **Collapsible sidebar** — toggle between full category panel and compact emoji-only strip
+- **Bookmark & save** — Instagram-style animated save button with filled icon, pop animation, and expanding ring burst
 - **Full-text search** — search across article titles and descriptions in real time
 - **Infinite scroll** — seamlessly loads more articles as you scroll down
+- **Mobile-first design** — compact horizontal cards, slide-up sidebar sheet, full-screen article reader, and dynamic viewport height
+- **Adaptive UI** — save button uses a corner gradient overlay for contrast against any article image
+- **Fetch status badges** — each article shows whether it has the full text or just an RSS summary
+- **Manage dashboard** — dedicated `/manage` page for full CRUD on feeds and categories
+- **Categories in DB** — categories are stored in PocketBase and can be added, edited, or deleted from the UI
 - **Background scheduler** — APScheduler fetches new articles on a configurable interval (default: 30 min)
 - **Retry with backoff** — all PocketBase and HTTP requests automatically retry on transient failures (429, 5xx, timeouts)
-- **One-click reset** — clear all articles from the database with a confirmation modal
 - **Live status indicator** — shows scheduler state and last-fetch timestamp
-- **Responsive design** — works on desktop, tablet, and mobile with a dedicated mobile category bar
 - **Self-hosted** — runs entirely on your own hardware; no third-party services or tracking
 
 ## Tech Stack
@@ -122,7 +125,7 @@ pip install fastapi uvicorn httpx feedparser newspaper4k apscheduler python-dote
 python setup_db.py
 ```
 
-This creates the `feeds` and `articles` collections in PocketBase and seeds all 35+ RSS feeds.
+This creates the `categories`, `feeds`, and `articles` collections in PocketBase and seeds all categories and 35+ RSS feeds.
 
 ### 5. Start the backend
 
@@ -199,6 +202,9 @@ All backend configuration is done through environment variables in `backend/.env
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/feeds` | List all feeds (optional `?category=` filter) |
+| `POST` | `/api/feeds` | Create a new feed |
+| `PATCH` | `/api/feeds/:id` | Update a feed |
+| `DELETE` | `/api/feeds/:id` | Delete a feed |
 | `POST` | `/api/feeds/:id/toggle` | Enable or disable a feed |
 | `GET` | `/api/articles` | List articles with filtering, search, and pagination |
 | `GET` | `/api/articles/:id` | Get a single article (marks as read) |
@@ -208,6 +214,9 @@ All backend configuration is done through environment variables in `backend/.env
 | `POST` | `/api/refresh` | Manually trigger a full feed refresh |
 | `GET` | `/api/status` | Scheduler status and last-fetch stats |
 | `GET` | `/api/categories` | List all categories |
+| `POST` | `/api/categories` | Create a new category |
+| `PATCH` | `/api/categories/:id` | Update a category |
+| `DELETE` | `/api/categories/:id` | Delete a category |
 
 ## RSS Feed Sources
 
@@ -232,12 +241,12 @@ All backend configuration is done through environment variables in `backend/.env
 ```
 personal-news/
 ├── backend/
-│   ├── main.py              # FastAPI app, routes, lifespan
+│   ├── main.py              # FastAPI app, routes, CRUD endpoints
 │   ├── pocketbase.py        # PocketBase REST client with retry
 │   ├── fetcher.py           # RSS + newspaper4k article extraction
 │   ├── scheduler.py         # APScheduler background job
-│   ├── feeds_data.py        # Curated feed list and categories
-│   ├── setup_db.py          # One-time DB setup and seed script
+│   ├── feeds_data.py        # Default feed list and categories
+│   ├── setup_db.py          # DB setup: categories, feeds, articles + seeding
 │   ├── config.py            # Environment variable loading
 │   ├── dns_patch.py         # DNS resolution fallback
 │   └── .env.example         # Example environment config
@@ -245,18 +254,22 @@ personal-news/
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── page.tsx     # Main dashboard page
+│   │   │   ├── manage/
+│   │   │   │   └── page.tsx # Feed & category management dashboard
 │   │   │   ├── layout.tsx   # Root layout with metadata
-│   │   │   └── globals.css  # Glass styles, animations
+│   │   │   └── globals.css  # Glass styles, animations, save button keyframes
 │   │   ├── components/
-│   │   │   ├── Header.tsx   # Search, refresh, saved, reset
-│   │   │   ├── Sidebar.tsx  # Category nav with feed toggles
-│   │   │   ├── NewsGrid.tsx # Infinite-scroll article grid
-│   │   │   ├── NewsCard.tsx # Individual article card
-│   │   │   ├── ArticleModal.tsx  # Full article reader
-│   │   │   ├── CategoryBadge.tsx # Colored category labels
-│   │   │   └── SkeletonCard.tsx  # Loading placeholders
+│   │   │   ├── Header.tsx         # Search, refresh, saved filter, manage link
+│   │   │   ├── Sidebar.tsx        # Collapsible category nav + feed toggles
+│   │   │   ├── MobileSidebar.tsx  # Slide-up bottom sheet for mobile
+│   │   │   ├── NewsGrid.tsx       # Infinite-scroll article grid
+│   │   │   ├── NewsCard.tsx       # Article card (horizontal mobile / vertical desktop)
+│   │   │   ├── ArticleModal.tsx   # Full article reader (full-screen on mobile)
+│   │   │   ├── SaveButton.tsx     # Animated bookmark with overlay/surface variants
+│   │   │   ├── CategoryBadge.tsx  # Colored category labels
+│   │   │   └── SkeletonCard.tsx   # Loading placeholders
 │   │   └── lib/
-│   │       ├── api.ts       # Backend API client
+│   │       ├── api.ts       # Backend API client (feeds, articles, categories CRUD)
 │   │       ├── types.ts     # TypeScript interfaces
 │   │       └── categoryColors.ts # Category color mapping
 │   ├── package.json

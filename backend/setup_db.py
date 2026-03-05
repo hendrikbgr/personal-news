@@ -9,7 +9,7 @@ import logging
 import sys
 import httpx
 from config import POCKETBASE_URL, POCKETBASE_ADMIN_EMAIL, POCKETBASE_ADMIN_PASSWORD
-from feeds_data import FEEDS
+from feeds_data import FEEDS, CATEGORIES
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -43,6 +43,16 @@ async def collection_exists(client: httpx.AsyncClient, token: str, name: str) ->
     return resp.status_code == 200
 
 
+CATEGORIES_FIELDS = [
+    {"name": "slug", "type": "text", "required": True},
+    {"name": "name", "type": "text", "required": True},
+    {"name": "emoji", "type": "text", "required": False},
+    {"name": "color", "type": "text", "required": False},
+    {"name": "created", "type": "autodate", "onCreate": True, "onUpdate": False},
+    {"name": "updated", "type": "autodate", "onCreate": True, "onUpdate": True},
+]
+
+
 FEEDS_FIELDS = [
     {"name": "name", "type": "text", "required": True},
     {"name": "url", "type": "url", "required": True},
@@ -53,6 +63,54 @@ FEEDS_FIELDS = [
     {"name": "created", "type": "autodate", "onCreate": True, "onUpdate": False},
     {"name": "updated", "type": "autodate", "onCreate": True, "onUpdate": True},
 ]
+
+
+async def create_categories_collection(client: httpx.AsyncClient, token: str):
+    if await collection_exists(client, token, "categories"):
+        logger.info("Collection 'categories' already exists — patching fields")
+        await _patch_collection_fields(client, token, "categories", CATEGORIES_FIELDS)
+        return
+
+    schema = {"name": "categories", "type": "base", "fields": CATEGORIES_FIELDS}
+    resp = await client.post(
+        f"{POCKETBASE_URL}/api/collections",
+        headers={"Authorization": token, "Content-Type": "application/json"},
+        json=schema,
+    )
+    if resp.status_code in (200, 201):
+        logger.info("Created collection 'categories'")
+    else:
+        logger.error(f"Failed to create 'categories': {resp.status_code} {resp.text}")
+
+
+async def seed_categories(client: httpx.AsyncClient, token: str):
+    """Insert all categories from feeds_data.py if they don't already exist."""
+    logger.info(f"Seeding {len(CATEGORIES)} categories…")
+    created = 0
+    skipped = 0
+
+    for cat in CATEGORIES:
+        slug = cat["id"]
+        resp = await client.get(
+            f"{POCKETBASE_URL}/api/collections/categories/records",
+            headers={"Authorization": token},
+            params={"filter": f"slug='{slug}'", "perPage": 1},
+        )
+        if resp.status_code == 200 and resp.json().get("totalItems", 0) > 0:
+            skipped += 1
+            continue
+
+        create_resp = await client.post(
+            f"{POCKETBASE_URL}/api/collections/categories/records",
+            headers={"Authorization": token, "Content-Type": "application/json"},
+            json={"slug": slug, "name": cat["name"], "emoji": cat["emoji"], "color": cat["color"]},
+        )
+        if create_resp.status_code in (200, 201):
+            created += 1
+        else:
+            logger.warning(f"Failed to create category '{cat['name']}': {create_resp.text}")
+
+    logger.info(f"Categories: {created} created, {skipped} already existed")
 
 
 async def create_feeds_collection(client: httpx.AsyncClient, token: str):
@@ -202,8 +260,10 @@ async def main():
     logger.info(f"Connecting to PocketBase at {POCKETBASE_URL}")
     async with httpx.AsyncClient(timeout=30) as client:
         token = await authenticate(client)
+        await create_categories_collection(client, token)
         await create_feeds_collection(client, token)
         await create_articles_collection(client, token)
+        await seed_categories(client, token)
         await seed_feeds(client, token)
     logger.info("Setup complete!")
 
