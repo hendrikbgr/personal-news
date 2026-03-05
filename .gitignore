@@ -1,0 +1,55 @@
+# ── Environment & Secrets ──────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Python ─────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+poetry.lock
+
+# ── Node / Frontend ────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ── PocketBase ─────────────────────────────────────────────────────────────
+pb_data/
+pb_migrations/
+
+# ── IDE & OS ───────────────────────────────────────────────────────────────
+.claude/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# ── Misc ───────────────────────────────────────────────────────────────────
+*.pem
+*.key
+*.cert
+credentials.json
