@@ -103,11 +103,13 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
                 {readTime}
               </span>
             )}
-            {article.fetch_status === "full" ? (
-              <FileText className="w-3 h-3 text-emerald-500 flex-shrink-0" title="Full article" />
-            ) : (
-              <Rss className="w-3 h-3 text-amber-500 flex-shrink-0" title="Summary only" />
-            )}
+            <span title={article.fetch_status === "full" ? "Full article" : "Summary only"} className="flex-shrink-0">
+              {article.fetch_status === "full" ? (
+                <FileText className="w-3 h-3 text-emerald-500" />
+              ) : (
+                <Rss className="w-3 h-3 text-amber-500" />
+              )}
+            </span>
           </div>
         </div>
       </div>
