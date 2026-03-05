@@ -7,7 +7,7 @@ python main.py &
 BACKEND_PID=$!
 
 cd /app/frontend
-node server.js &
+PORT=3000 node server.js &
 FRONTEND_PID=$!
 
 echo "Backend  → http://localhost:8000  (PID $BACKEND_PID)"

@@ -6,6 +6,8 @@ services:
     ports:
       - "3003:3000"
       - "8006:8000"
+    extra_hosts:
+      - "personal-news-db.hendrikslab.online:host-gateway"
     env_file:
       - backend/.env
     environment:
