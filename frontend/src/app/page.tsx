@@ -55,6 +55,7 @@ export default function Home() {
     isSaved: showSaved ? true : undefined,
     fetchStatus: fetchStatus ?? undefined,
     publishedAfter,
+    activeOnly: showSaved ? undefined : true,
   };
 
   // Banner: check for new articles since last visit

@@ -41,6 +41,7 @@ export interface ArticleFilters {
   isRead?: boolean;
   fetchStatus?: "full" | "summary";
   publishedAfter?: string;
+  activeOnly?: boolean;
   page?: number;
   perPage?: number;
 }
@@ -56,6 +57,7 @@ export const getArticles = (
   if (filters.isRead !== undefined) p.set("is_read", String(filters.isRead));
   if (filters.fetchStatus) p.set("fetch_status", filters.fetchStatus);
   if (filters.publishedAfter) p.set("published_after", filters.publishedAfter);
+  if (filters.activeOnly) p.set("active_only", "true");
   if (filters.page) p.set("page", String(filters.page));
   if (filters.perPage) p.set("per_page", String(filters.perPage));
   const qs = p.toString();
@@ -70,6 +72,9 @@ export const toggleSaved = (id: string): Promise<Article> =>
 
 export const markRead = (id: string): Promise<Article> =>
   req(`/api/articles/${id}/read`, { method: "PATCH" });
+
+export const refetchArticle = (id: string): Promise<{ success: boolean; fetch_status: string }> =>
+  req(`/api/articles/${id}/refetch`, { method: "POST" });
 
 export const resetSaved = (): Promise<{ cleared: number }> =>
   req("/api/articles/reset-saved", { method: "POST" });

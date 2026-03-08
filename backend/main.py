@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from config import PORT
 from pocketbase import pb
-from fetcher import fetch_all_active_feeds, fetch_feed
+from fetcher import fetch_all_active_feeds, fetch_feed, _extract_article
 import scheduler as sched
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -176,11 +176,14 @@ async def get_articles(
     is_read: Optional[bool] = Query(None),
     fetch_status: Optional[str] = Query(None),
     published_after: Optional[str] = Query(None),
+    active_only: Optional[bool] = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(30, ge=1, le=100),
 ):
     """List articles with optional filtering."""
     filters = []
+    if active_only:
+        filters.append("feed_id.is_active=true")
     if category:
         filters.append(f"category='{category}'")
     if feed_id:
@@ -247,6 +250,38 @@ async def mark_read(article_id: str):
         return updated
     except Exception:
         raise HTTPException(status_code=404, detail="Article not found")
+
+
+@app.post("/api/articles/{article_id}/refetch")
+async def refetch_article(article_id: str):
+    """Re-attempt full article extraction for a summary-only article."""
+    try:
+        article = await pb.get_record("articles", article_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    url = article.get("url")
+    if not url:
+        raise HTTPException(status_code=400, detail="Article has no URL")
+
+    extracted = await _extract_article(url)
+    full_content = extracted.get("content") or ""
+    description = article.get("description") or ""
+    has_full = bool(full_content and len(full_content) > len(description) + 50)
+
+    if not has_full:
+        return {"success": False, "fetch_status": "summary"}
+
+    updated = await pb.update_record("articles", article_id, {
+        "content": full_content,
+        "image_url": (extracted.get("image_url") or article.get("image_url") or "")[:2000],
+        "author": (extracted.get("author") or article.get("author") or "")[:200],
+        "word_count": extracted.get("word_count") or 0,
+        "summary": (extracted.get("summary") or article.get("summary") or "")[:2000],
+        "keywords": extracted.get("keywords") or article.get("keywords") or "",
+        "fetch_status": "full",
+    })
+    return {"success": True, "fetch_status": "full", "article": updated}
 
 
 @app.post("/api/articles/mark-all-read")

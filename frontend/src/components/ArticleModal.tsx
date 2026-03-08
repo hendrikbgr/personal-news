@@ -13,10 +13,14 @@ import {
   Rss,
   Hash,
   BarChart2,
+  RefreshCw,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Article } from "@/lib/types";
-import { getArticle, toggleSaved } from "@/lib/api";
+import { getArticle, toggleSaved, refetchArticle } from "@/lib/api";
 import CategoryBadge from "./CategoryBadge";
 import SaveButton from "./SaveButton";
 
@@ -29,6 +33,8 @@ export default function ArticleModal({ articleId, onClose }: Props) {
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [refetching, setRefetching] = useState(false);
+  const [refetchResult, setRefetchResult] = useState<"success" | "error" | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,6 +60,26 @@ export default function ArticleModal({ articleId, onClose }: Props) {
       document.body.style.overflow = "";
     };
   }, [stableClose]);
+
+  async function handleRefetch() {
+    if (!article) return;
+    setRefetching(true);
+    setRefetchResult(null);
+    try {
+      const result = await refetchArticle(article.id);
+      if (result.success) {
+        const updated = await getArticle(article.id);
+        setArticle(updated);
+        setRefetchResult("success");
+      } else {
+        setRefetchResult("error");
+      }
+    } catch {
+      setRefetchResult("error");
+    } finally {
+      setRefetching(false);
+    }
+  }
 
   async function handleSave() {
     if (!article) return;
@@ -279,21 +305,47 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                 ) : (
                   <>
                     <p>{article.description}</p>
-                    <div className="mt-5 glass rounded-xl p-4 flex items-start gap-3">
-                      <Rss className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Only the RSS excerpt is available.{" "}
-                        <a
-                          href={article.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-500 dark:text-indigo-400 underline"
+                    <div className="mt-5 glass rounded-xl p-4 flex flex-col gap-3">
+                      <div className="flex items-start gap-3">
+                        <Rss className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Only the RSS excerpt is available.{" "}
+                          <a
+                            href={article.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-500 dark:text-indigo-400 underline"
+                          >
+                            Read the full story at{" "}
+                            {article.expand?.feed_id?.source ?? "the source"}
+                          </a>
+                          .
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleRefetch}
+                          disabled={refetching}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl glass text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50/40 transition-all disabled:opacity-50"
                         >
-                          Read the full story at{" "}
-                          {article.expand?.feed_id?.source ?? "the source"}
-                        </a>
-                        .
-                      </p>
+                          {refetching ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          )}
+                          {refetching ? "Fetching…" : "Try full article"}
+                        </button>
+                        {refetchResult === "success" && (
+                          <span className="flex items-center gap-1 text-xs text-emerald-500 dark:text-emerald-400 font-medium">
+                            <CheckCircle className="w-3.5 h-3.5" /> Got it!
+                          </span>
+                        )}
+                        {refetchResult === "error" && (
+                          <span className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400">
+                            <AlertCircle className="w-3.5 h-3.5" /> Paywalled or blocked
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}
