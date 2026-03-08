@@ -38,6 +38,7 @@ export interface ArticleFilters {
   feedId?: string;
   search?: string;
   isSaved?: boolean;
+  fetchStatus?: "full" | "summary";
   page?: number;
   perPage?: number;
 }
@@ -50,6 +51,7 @@ export const getArticles = (
   if (filters.feedId) p.set("feed_id", filters.feedId);
   if (filters.search) p.set("search", filters.search);
   if (filters.isSaved !== undefined) p.set("is_saved", String(filters.isSaved));
+  if (filters.fetchStatus) p.set("fetch_status", filters.fetchStatus);
   if (filters.page) p.set("page", String(filters.page));
   if (filters.perPage) p.set("per_page", String(filters.perPage));
   const qs = p.toString();

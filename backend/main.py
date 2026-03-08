@@ -133,6 +133,7 @@ async def get_articles(
     feed_id: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     is_saved: Optional[bool] = Query(None),
+    fetch_status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(30, ge=1, le=100),
 ):
@@ -147,6 +148,8 @@ async def get_articles(
         filters.append(f"(title~'{safe_search}'||description~'{safe_search}')")
     if is_saved is not None:
         filters.append(f"is_saved={str(is_saved).lower()}")
+    if fetch_status in ("full", "summary"):
+        filters.append(f"fetch_status='{fetch_status}'")
 
     filter_str = "&&".join(filters)
     result = await pb.list_records(

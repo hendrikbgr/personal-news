@@ -13,60 +13,12 @@ import {
   Rss,
   Hash,
   BarChart2,
-  AlignLeft,
-  BookOpen,
-  Layers,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Article } from "@/lib/types";
 import { getArticle, toggleSaved } from "@/lib/api";
 import CategoryBadge from "./CategoryBadge";
 import SaveButton from "./SaveButton";
-
-export type ViewMode = "summary" | "both" | "full";
-
-export function getStoredViewMode(): ViewMode {
-  if (typeof window === "undefined") return "both";
-  return (localStorage.getItem("article-view-mode") as ViewMode) ?? "both";
-}
-
-export function saveViewMode(mode: ViewMode) {
-  localStorage.setItem("article-view-mode", mode);
-}
-
-const VIEW_MODES = [
-  { value: "summary", label: "Summary", icon: <AlignLeft className="w-3 h-3" /> },
-  { value: "both", label: "Both", icon: <Layers className="w-3 h-3" /> },
-  { value: "full", label: "Full", icon: <BookOpen className="w-3 h-3" /> },
-];
-
-function ViewToggle({
-  mode,
-  onChange,
-}: {
-  mode: ViewMode;
-  onChange: (m: ViewMode) => void;
-}) {
-  return (
-    <div className="flex items-center gap-0.5 glass rounded-xl p-1">
-      {VIEW_MODES.map(({ value, label, icon }) => (
-        <button
-          key={value}
-          onClick={() => onChange(value as ViewMode)}
-          title={label}
-          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
-            mode === value
-              ? "bg-white/80 text-gray-800 shadow-sm"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
-        >
-          {icon}
-          <span className="hidden sm:inline">{label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
 
 interface Props {
   articleId: string;
@@ -77,9 +29,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(getStoredViewMode);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -105,11 +55,6 @@ export default function ArticleModal({ articleId, onClose }: Props) {
     };
   }, [stableClose]);
 
-  function handleViewMode(mode: ViewMode) {
-    setViewMode(mode);
-    saveViewMode(mode);
-  }
-
   async function handleSave() {
     if (!article) return;
     try {
@@ -131,8 +76,14 @@ export default function ArticleModal({ articleId, onClose }: Props) {
     article?.content && article.fetch_status === "full"
   );
 
-  const showSummary = viewMode === "summary" || viewMode === "both";
-  const showContent = viewMode === "full" || viewMode === "both";
+  // Split content into non-empty paragraphs, skipping blank lines
+  function renderContent(text: string) {
+    const paras = text
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    return paras.map((para, i) => <p key={i}>{para}</p>);
+  }
 
   return (
     <div
@@ -150,28 +101,25 @@ export default function ArticleModal({ articleId, onClose }: Props) {
             <ChevronLeft className="w-5 h-5" />
             <span className="text-sm font-medium">Back</span>
           </button>
-          <div className="flex items-center gap-1.5">
-            {article && (
-              <>
-                <ViewToggle mode={viewMode} onChange={handleViewMode} />
-                <SaveButton
-                  saved={saved}
-                  onToggle={handleSave}
-                  size="lg"
-                  variant="surface"
-                  className="p-2 rounded-xl active:bg-white/40 transition-all"
-                />
-                <a
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-xl active:bg-white/40 transition-all"
-                >
-                  <ExternalLink className="w-5 h-5 text-gray-500" />
-                </a>
-              </>
-            )}
-          </div>
+          {article && (
+            <div className="flex items-center gap-1.5">
+              <SaveButton
+                saved={saved}
+                onToggle={handleSave}
+                size="lg"
+                variant="surface"
+                className="p-2 rounded-xl active:bg-white/40 transition-all"
+              />
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-xl active:bg-white/40 transition-all"
+              >
+                <ExternalLink className="w-5 h-5 text-gray-500" />
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Desktop header */}
@@ -187,7 +135,6 @@ export default function ArticleModal({ articleId, onClose }: Props) {
           <div className="flex items-center gap-2">
             {article && (
               <>
-                <ViewToggle mode={viewMode} onChange={handleViewMode} />
                 <SaveButton
                   saved={saved}
                   onToggle={handleSave}
@@ -216,10 +163,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
         </div>
 
         {/* Body */}
-        <div
-          ref={contentRef}
-          className="flex-1 overflow-y-auto overscroll-contain"
-        >
+        <div className="flex-1 overflow-y-auto overscroll-contain">
           {loading ? (
             <div className="p-6 sm:p-8 space-y-4">
               <div className="h-6 shimmer rounded-full" />
@@ -236,7 +180,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
             </div>
           ) : article ? (
             <div className="p-5 sm:p-7">
-              {/* Mobile category + source */}
+              {/* Mobile: category + source */}
               <div className="sm:hidden flex items-center gap-2 mb-3">
                 <CategoryBadge category={article.category} size="md" />
                 {article.expand?.feed_id && (
@@ -248,7 +192,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
               </div>
 
               {/* Title */}
-              <h1 className="text-xl sm:text-2xl md:text-[1.65rem] font-bold text-gray-800 leading-snug mb-4 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 leading-snug mb-4 tracking-tight">
                 {article.title}
               </h1>
 
@@ -257,29 +201,22 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                 {article.author && (
                   <span className="flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span className="truncate max-w-[180px]">
-                      {article.author}
-                    </span>
+                    <span className="truncate max-w-[180px]">{article.author}</span>
                   </span>
                 )}
                 {article.published_at && (
                   <span
                     className="flex items-center gap-1.5"
-                    title={format(
-                      new Date(article.published_at),
-                      "MMM d, yyyy 'at' h:mm a"
-                    )}
+                    title={format(new Date(article.published_at), "MMM d, yyyy 'at' h:mm a")}
                   >
                     <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                    {formatDistanceToNow(new Date(article.published_at), {
-                      addSuffix: true,
-                    })}
+                    {formatDistanceToNow(new Date(article.published_at), { addSuffix: true })}
                   </span>
                 )}
                 {readTime && (
                   <span className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                    {readTime} min read
+                    {readTime} min
                     {article.word_count ? (
                       <span className="text-gray-400">
                         · {article.word_count.toLocaleString()} words
@@ -313,11 +250,11 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                 </div>
               )}
 
-              {/* Summary section */}
-              {showSummary && hasSummary && (
+              {/* AI summary */}
+              {hasSummary && (
                 <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-6 border-l-4 border-indigo-300/70">
                   <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 mb-2">
-                    AI Summary
+                    Summary
                   </p>
                   <p className="text-[15px] text-gray-700 leading-relaxed">
                     {article.summary}
@@ -325,45 +262,28 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                 </div>
               )}
 
-              {/* If summary mode but no summary, show description */}
-              {showSummary && !hasSummary && !showContent && (
-                <p className="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-6">
-                  {article.description}
-                </p>
-              )}
-
-              {/* Full content / description */}
-              {showContent && (
-                <div className="article-content text-[15px] sm:text-base leading-[1.85] text-gray-700">
-                  {hasFullContent ? (
-                    <>
-                      {/* Description as lead paragraph when different from content start */}
-                      {article.description &&
-                        !article.content
-                          .trim()
-                          .startsWith(article.description.trim().slice(0, 60)) && (
-                          <p className="text-base sm:text-lg font-medium text-gray-600 leading-relaxed mb-5 pb-5 border-b border-white/40 italic">
-                            {article.description}
-                          </p>
-                        )}
-                      {article.content.split("\n").map((para, i) =>
-                        para.trim() ? (
-                          <p key={i}>{para}</p>
-                        ) : (
-                          <br key={i} />
-                        )
+              {/* Full content */}
+              <div className="article-content text-[15px] sm:text-base text-gray-700">
+                {hasFullContent ? (
+                  <>
+                    {/* Lead: show RSS description as italic intro if different from content */}
+                    {article.description &&
+                      !article.content
+                        .trim()
+                        .startsWith(article.description.trim().slice(0, 60)) && (
+                        <p className="text-base text-gray-500 italic mb-4 pb-4 border-b border-white/40">
+                          {article.description}
+                        </p>
                       )}
-                    </>
-                  ) : (
+                    {renderContent(article.content)}
+                  </>
+                ) : (
+                  <>
                     <p>{article.description}</p>
-                  )}
-
-                  {/* RSS-only notice */}
-                  {!hasFullContent && (
                     <div className="mt-5 glass rounded-xl p-4 flex items-start gap-3">
                       <Rss className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                       <p className="text-sm text-gray-500">
-                        Only the RSS excerpt was retrieved for this article.{" "}
+                        Only the RSS excerpt is available.{" "}
                         <a
                           href={article.url}
                           target="_blank"
@@ -376,13 +296,13 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                         .
                       </p>
                     </div>
-                  )}
-                </div>
-              )}
+                  </>
+                )}
+              </div>
 
-              {/* Keywords */}
+              {/* Keywords / topics */}
               {article.keywords && (
-                <div className="mt-7 pt-5 border-t border-white/40">
+                <div className="mt-6 pt-5 border-t border-white/40">
                   <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5">
                     <Hash className="w-3 h-3" /> Topics
                   </p>
@@ -399,7 +319,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                 </div>
               )}
 
-              {/* Source + stats footer */}
+              {/* Footer */}
               <div className="mt-6 pt-5 border-t border-white/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 sm:pb-0">
                 <a
                   href={article.url}
@@ -413,16 +333,13 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                 {article.word_count && article.fetch_status === "full" && (
                   <span className="flex items-center gap-1.5 text-xs text-gray-400">
                     <BarChart2 className="w-3.5 h-3.5" />
-                    {article.word_count.toLocaleString()} words ·{" "}
-                    {readTime} min read
+                    {article.word_count.toLocaleString()} words · {readTime} min read
                   </span>
                 )}
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-gray-500">
-              Article not found.
-            </div>
+            <div className="p-8 text-center text-gray-500">Article not found.</div>
           )}
         </div>
       </div>

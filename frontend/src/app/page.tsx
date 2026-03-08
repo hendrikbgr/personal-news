@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { SWRConfig } from "swr";
+import { FileText, Rss, LayoutGrid } from "lucide-react";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import NewsGrid from "@/components/NewsGrid";
@@ -12,6 +13,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showSaved, setShowSaved] = useState(false);
+  const [fetchStatus, setFetchStatus] = useState<"full" | "summary" | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -20,6 +22,7 @@ export default function Home() {
     category: selectedCategory ?? undefined,
     search: search || undefined,
     isSaved: showSaved ? true : undefined,
+    fetchStatus: fetchStatus ?? undefined,
   };
 
   const handleRefreshed = useCallback(() => {
@@ -45,6 +48,32 @@ export default function Home() {
 
         {/* Mobile category pills — below header, scrollable */}
         <div className="md:hidden flex gap-1.5 overflow-x-auto scrollbar-none -mx-2 px-2 pb-0.5 flex-shrink-0">
+          {/* Fetch status filter pills (mobile) */}
+          <button
+            onClick={() => setFetchStatus(null)}
+            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              fetchStatus === null ? "glass-strong text-gray-700 shadow-sm" : "glass text-gray-500"
+            }`}
+          >
+            <LayoutGrid className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => setFetchStatus("full")}
+            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              fetchStatus === "full" ? "glass-strong text-emerald-700 shadow-sm" : "glass text-gray-500"
+            }`}
+          >
+            <FileText className="w-3 h-3" /> Full
+          </button>
+          <button
+            onClick={() => setFetchStatus("summary")}
+            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              fetchStatus === "summary" ? "glass-strong text-amber-700 shadow-sm" : "glass text-gray-500"
+            }`}
+          >
+            <Rss className="w-3 h-3" /> RSS
+          </button>
+          <span className="text-gray-300 self-center flex-shrink-0 select-none">|</span>
           {[
             { id: null, label: "All", emoji: "📋" },
             { id: "world", label: "World", emoji: "🌍" },
@@ -87,6 +116,34 @@ export default function Home() {
           <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
             {/* Desktop status line */}
             <div className="hidden md:flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-none">
+              {/* Fetch status filter */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => setFetchStatus(null)}
+                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    fetchStatus === null ? "glass-strong text-gray-700" : "glass text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <LayoutGrid className="w-3 h-3" /> All
+                </button>
+                <button
+                  onClick={() => setFetchStatus("full")}
+                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    fetchStatus === "full" ? "glass-strong text-emerald-700" : "glass text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <FileText className="w-3 h-3" /> Full articles
+                </button>
+                <button
+                  onClick={() => setFetchStatus("summary")}
+                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    fetchStatus === "summary" ? "glass-strong text-amber-700" : "glass text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Rss className="w-3 h-3" /> RSS only
+                </button>
+              </div>
+              <span className="text-gray-300 select-none flex-shrink-0">·</span>
               {showSaved && (
                 <span className="glass-strong px-3 py-1 rounded-full text-sm text-indigo-700 font-medium flex-shrink-0">
                   🔖 Saved
@@ -99,9 +156,7 @@ export default function Home() {
               )}
               {!showSaved && !search && (
                 <span className="glass px-3 py-1 rounded-full text-sm text-gray-500 flex-shrink-0">
-                  {selectedCategory
-                    ? `Browsing ${selectedCategory}`
-                    : "All articles"}
+                  {selectedCategory ? `Browsing ${selectedCategory}` : "All articles"}
                 </span>
               )}
             </div>

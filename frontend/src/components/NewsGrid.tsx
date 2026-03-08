@@ -30,7 +30,7 @@ export default function NewsGrid({ filters, refreshKey, sidebarOpen = true }: Pr
     setPage(1);
     setAllArticles([]);
     setHasMore(true);
-  }, [filters.category, filters.feedId, filters.search, filters.isSaved, refreshKey]);
+  }, [filters.category, filters.feedId, filters.search, filters.isSaved, filters.fetchStatus, refreshKey]);
 
   const swrKey = JSON.stringify({ ...filters, page, refreshKey });
 
