@@ -4,6 +4,7 @@ RSS + newspaper4k article fetching logic with retry support.
 
 import asyncio
 import logging
+import random
 import re
 from datetime import datetime, timezone
 from typing import Optional
@@ -19,6 +20,25 @@ _sem = asyncio.Semaphore(4)
 
 MAX_RETRIES = 3
 RETRY_BACKOFF_BASE = 2  # seconds — delays: 2, 4
+
+# Rotate through realistic browser User-Agent strings to reduce soft blocks
+_USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+]
+
+_BROWSER_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Referer": "https://www.google.com/",
+    "DNT": "1",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+}
 
 
 def _parse_date(entry) -> Optional[str]:
@@ -82,9 +102,36 @@ async def _extract_article(url: str) -> dict:
 
 
 def _download_article(url: str) -> dict:
-    """Synchronous newspaper4k download (runs in executor). Raises on failure."""
-    a = Article(url, language="en", fetch_images=True)
-    a.download()
+    """
+    Synchronous newspaper4k download (runs in executor). Raises on failure.
+
+    Strategy:
+    1. Pre-fetch HTML with httpx using realistic browser headers (rotated UA,
+       Google Referer, Accept-Language). This bypasses newspaper4k's basic UA
+       and lets us control the full request.
+    2. Pass pre-fetched HTML to newspaper4k via download(input_html=...) so
+       newspaper4k only does parsing, not the HTTP request.
+    3. Fall back to newspaper4k's own HTTP stack if httpx pre-fetch fails.
+    """
+    ua = random.choice(_USER_AGENTS)
+    html: Optional[str] = None
+
+    try:
+        with httpx.Client(timeout=15, follow_redirects=True) as client:
+            resp = client.get(url, headers={**_BROWSER_HEADERS, "User-Agent": ua})
+            resp.raise_for_status()
+            html = resp.text
+    except Exception as e:
+        logger.debug("httpx pre-fetch failed for %s (%s) — falling back to newspaper4k", url, e)
+
+    a = Article(url, language="en", fetch_images=True, memoize_articles=False,
+                browser_user_agent=ua, request_timeout=15)
+
+    if html:
+        a.download(input_html=html)
+    else:
+        a.download()
+
     a.parse()
 
     summary = ""
