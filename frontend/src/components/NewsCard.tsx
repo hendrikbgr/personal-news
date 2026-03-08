@@ -83,9 +83,9 @@ export default function NewsCard({ article, onClick, onSavedChange, viewStyle = 
             </span>
           )}
           {article.fetch_status === "full" ? (
-            <FileText className="w-3.5 h-3.5 text-emerald-500" title="Full article" />
+            <span title="Full article"><FileText className="w-3.5 h-3.5 text-emerald-500" /></span>
           ) : (
-            <Rss className="w-3.5 h-3.5 text-amber-500" title="RSS summary" />
+            <span title="RSS summary"><Rss className="w-3.5 h-3.5 text-amber-500" /></span>
           )}
         </span>
 
