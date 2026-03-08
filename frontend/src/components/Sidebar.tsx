@@ -102,7 +102,7 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
   }
 
   return (
-    <div className="glass-strong rounded-3xl p-4 h-full flex flex-col gap-1 overflow-y-auto sidebar-scroll">
+    <div className="glass-strong rounded-3xl p-4 h-full flex flex-col gap-1 overflow-y-auto scrollbar-none sidebar-scroll">
       <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 px-2 mb-2">
         Categories
       </h2>

@@ -109,7 +109,7 @@ export default function NewsGrid({ filters, refreshKey, sidebarOpen = true, view
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-1">
+      <div className="flex-1 overflow-y-auto scrollbar-none px-1">
         {error && (
           <div className="flex flex-col items-center justify-center py-20 text-gray-500 dark:text-gray-400">
             <WifiOff className="w-10 h-10 mb-3 opacity-50" />

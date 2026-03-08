@@ -112,7 +112,7 @@ export default function MobileSidebar({
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-1">
+        <div className="flex-1 overflow-y-auto scrollbar-none overscroll-contain px-4 py-3 space-y-1">
           {/* All */}
           <button
             onClick={() => handleSelectCategory(null)}

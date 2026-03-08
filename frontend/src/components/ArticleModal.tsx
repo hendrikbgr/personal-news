@@ -163,7 +163,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="flex-1 overflow-y-auto scrollbar-none overscroll-contain">
           {loading ? (
             <div className="p-6 sm:p-8 space-y-4">
               <div className="h-6 shimmer rounded-full" />
