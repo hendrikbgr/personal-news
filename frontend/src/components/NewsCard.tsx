@@ -155,7 +155,7 @@ export default function NewsCard({ article, onClick, onSavedChange, onRead, view
       {/* Mobile: horizontal layout */}
       <div className="relative flex sm:hidden">
         {/* Thumbnail */}
-        <div className="relative w-28 flex-shrink-0 bg-white/20 dark:bg-white/5">
+        <div className="relative w-28 flex-shrink-0 bg-white/20 dark:bg-white/5 rounded-l-2xl overflow-hidden">
           {article.image_url ? (
             <Image
               src={article.image_url}
@@ -219,7 +219,7 @@ export default function NewsCard({ article, onClick, onSavedChange, onRead, view
       {/* Desktop: vertical card layout */}
       <div className="hidden sm:block">
         {/* Image */}
-        <div className="relative h-44 bg-white/20 dark:bg-white/5 overflow-hidden">
+        <div className="relative h-44 bg-white/20 dark:bg-white/5 overflow-hidden rounded-t-2xl">
           {article.image_url ? (
             <Image
               src={article.image_url}
