@@ -6,8 +6,17 @@ export interface Feed {
   source: string;
   emoji: string;
   is_active: boolean;
+  last_article_at?: string;
   created: string;
   updated: string;
+}
+
+export interface Stats {
+  read_today: number;
+  read_week: number;
+  saved_total: number;
+  active_feeds: number;
+  reading_minutes_week: number;
 }
 
 export interface Article {

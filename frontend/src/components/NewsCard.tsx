@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Clock, ExternalLink, FileText, Rss } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Article } from "@/lib/types";
-import { toggleSaved } from "@/lib/api";
+import { toggleSaved, markRead } from "@/lib/api";
 import { getCategoryStyle } from "@/lib/categoryColors";
 import CategoryBadge from "./CategoryBadge";
 import SaveButton from "./SaveButton";
@@ -14,14 +14,53 @@ interface Props {
   article: Article;
   onClick: () => void;
   onSavedChange?: (article: Article) => void;
+  onRead?: (id: string) => void;
   viewStyle?: "grid" | "list";
   isFocused?: boolean;
   cardRef?: (el: HTMLElement | null) => void;
 }
 
-export default function NewsCard({ article, onClick, onSavedChange, viewStyle = "grid", isFocused, cardRef }: Props) {
+export default function NewsCard({ article, onClick, onSavedChange, onRead, viewStyle = "grid", isFocused, cardRef }: Props) {
   const [saved, setSaved] = useState(article.is_saved);
   const [savingInFlight, setSavingInFlight] = useState(false);
+  const articleRef = useRef<HTMLElement | null>(null);
+  const hasFired = useRef(false);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      localStorage.getItem("auto-mark-read") !== "true" ||
+      article.is_read ||
+      !articleRef.current
+    ) return;
+
+    const el = articleRef.current;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasFired.current) {
+          timeout = setTimeout(async () => {
+            hasFired.current = true;
+            try {
+              await markRead(article.id);
+              onRead?.(article.id);
+            } catch { /* ignore */ }
+          }, 1500);
+        } else if (!entry.isIntersecting && timeout) {
+          clearTimeout(timeout);
+          timeout = null;
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [article.id, article.is_read, onRead]);
 
   const s = getCategoryStyle(article.category);
   const readTime = article.word_count
@@ -50,10 +89,15 @@ export default function NewsCard({ article, onClick, onSavedChange, viewStyle = 
   const focusRing = isFocused ? "ring-2 ring-indigo-400/70 ring-offset-1" : "";
 
   // ── List view ──────────────────────────────────────────────────────────────
+  const mergedRef = (el: HTMLElement | null) => {
+    articleRef.current = el;
+    cardRef?.(el);
+  };
+
   if (viewStyle === "list") {
     return (
       <article
-        ref={cardRef}
+        ref={mergedRef}
         onClick={onClick}
         className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 transition-colors ${focusRing}`}
       >
@@ -103,7 +147,7 @@ export default function NewsCard({ article, onClick, onSavedChange, viewStyle = 
   // ── Grid view ──────────────────────────────────────────────────────────────
   return (
     <article
-      ref={cardRef}
+      ref={mergedRef}
       onClick={onClick}
       className={`glass-card rounded-2xl overflow-hidden cursor-pointer group animate-fadeInUp ${focusRing}`}
       style={{ boxShadow: `0 4px 24px ${s.glow}` }}

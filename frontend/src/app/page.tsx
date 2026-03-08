@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import useSWR from "swr";
 import { SWRConfig } from "swr";
 import { FileText, Rss, LayoutGrid, Calendar } from "lucide-react";
@@ -8,8 +8,9 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import NewsGrid from "@/components/NewsGrid";
 import MobileSidebar from "@/components/MobileSidebar";
+import NewSinceBanner from "@/components/NewSinceBanner";
 import type { ArticleFilters } from "@/lib/api";
-import { getUnreadCount, markAllRead } from "@/lib/api";
+import { getUnreadCount, markAllRead, getArticles } from "@/lib/api";
 
 type DateRange = "today" | "24h" | "week" | null;
 type ViewStyle = "grid" | "list";
@@ -33,6 +34,11 @@ export default function Home() {
   const [dateRange, setDateRange] = useState<DateRange>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [bannerCount, setBannerCount] = useState(0);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [lastVisit, setLastVisit] = useState<string | null>(null);
+  const [sincePublishedAfter, setSincePublishedAfter] = useState<string | null>(null);
+  const bannerChecked = useRef(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [viewStyle, setViewStyle] = useState<ViewStyle>(() => {
     if (typeof window !== "undefined") {
@@ -41,7 +47,7 @@ export default function Home() {
     return "grid";
   });
 
-  const publishedAfter = getPublishedAfter(dateRange);
+  const publishedAfter = sincePublishedAfter ?? getPublishedAfter(dateRange);
 
   const filters: ArticleFilters = {
     category: selectedCategory ?? undefined,
@@ -50,6 +56,32 @@ export default function Home() {
     fetchStatus: fetchStatus ?? undefined,
     publishedAfter,
   };
+
+  // Banner: check for new articles since last visit
+  useEffect(() => {
+    if (bannerChecked.current) return;
+    bannerChecked.current = true;
+    const lv = localStorage.getItem("last-visit");
+    if (!lv) return;
+    setLastVisit(lv);
+    getArticles({ publishedAfter: lv, perPage: 1 }).then((r) => {
+      if (r.totalItems > 0) setBannerCount(r.totalItems);
+    }).catch(() => { /* ignore */ });
+  }, []);
+
+  // Save last-visit timestamp when tab hides
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) localStorage.setItem("last-visit", new Date().toISOString());
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
+  // Clear sincePublishedAfter when dateRange changes
+  useEffect(() => {
+    setSincePublishedAfter(null);
+  }, [dateRange]);
 
   // Unread count for tab title + mark-all-read button
   const { data: unreadCount = 0, mutate: mutateUnread } = useSWR(
@@ -109,6 +141,15 @@ export default function Home() {
           hasUnread={unreadCount > 0}
           onMarkAllRead={handleMarkAllRead}
         />
+
+        {/* New since last visit banner */}
+        {bannerCount > 0 && !bannerDismissed && lastVisit && (
+          <NewSinceBanner
+            count={bannerCount}
+            onDismiss={() => setBannerDismissed(true)}
+            onFilter={() => { setSincePublishedAfter(lastVisit); setBannerDismissed(true); }}
+          />
+        )}
 
         {/* Mobile pills row — fetch status + date range + categories */}
         <div className="md:hidden flex gap-1.5 overflow-x-auto scrollbar-none -mx-2 px-2 pb-0.5 flex-shrink-0">

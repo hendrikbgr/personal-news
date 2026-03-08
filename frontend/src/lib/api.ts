@@ -1,4 +1,4 @@
-import type { Article, Category, Feed, FetchStatus, PaginatedResult } from "./types";
+import type { Article, Category, Feed, FetchStatus, PaginatedResult, Stats } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
 
@@ -38,6 +38,7 @@ export interface ArticleFilters {
   feedId?: string;
   search?: string;
   isSaved?: boolean;
+  isRead?: boolean;
   fetchStatus?: "full" | "summary";
   publishedAfter?: string;
   page?: number;
@@ -52,6 +53,7 @@ export const getArticles = (
   if (filters.feedId) p.set("feed_id", filters.feedId);
   if (filters.search) p.set("search", filters.search);
   if (filters.isSaved !== undefined) p.set("is_saved", String(filters.isSaved));
+  if (filters.isRead !== undefined) p.set("is_read", String(filters.isRead));
   if (filters.fetchStatus) p.set("fetch_status", filters.fetchStatus);
   if (filters.publishedAfter) p.set("published_after", filters.publishedAfter);
   if (filters.page) p.set("page", String(filters.page));
@@ -88,6 +90,14 @@ export const markAllRead = (filters?: {
   if (filters?.publishedAfter) p.set("published_after", filters.publishedAfter);
   const qs = p.toString();
   return req(`/api/articles/mark-all-read${qs ? `?${qs}` : ""}`, { method: "POST" });
+};
+
+export const getStats = (): Promise<Stats> => req("/api/stats");
+
+export const exportSaved = async (): Promise<Blob> => {
+  const res = await fetch(`${BASE}/api/articles/export`);
+  if (!res.ok) throw new Error("Export failed");
+  return res.blob();
 };
 
 // ── Misc ───────────────────────────────────────────────────────────────────

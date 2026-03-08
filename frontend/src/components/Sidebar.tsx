@@ -3,9 +3,18 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Rss } from "lucide-react";
-import type { Category, Feed } from "@/lib/types";
-import { getFeeds, getCategories, toggleFeed } from "@/lib/api";
+import { formatDistanceToNow } from "date-fns";
+import type { Category, Feed, Stats } from "@/lib/types";
+import { getFeeds, getCategories, toggleFeed, getStats } from "@/lib/api";
 import { getCategoryStyle } from "@/lib/categoryColors";
+
+function getFeedHealthColor(last?: string): string {
+  if (!last) return "bg-gray-300 dark:bg-gray-600";
+  const age = Date.now() - new Date(last).getTime();
+  if (age < 24 * 3_600_000) return "bg-emerald-400";
+  if (age < 72 * 3_600_000) return "bg-amber-400";
+  return "bg-red-400";
+}
 
 interface Props {
   selectedCategory: string | null;
@@ -25,6 +34,10 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
 
   const { data: feeds, mutate: mutateFeeds } = useSWR<Feed[]>("feeds", () => getFeeds(), {
     refreshInterval: 15_000,
+  });
+
+  const { data: stats } = useSWR<Stats>("stats", getStats, {
+    refreshInterval: 300_000,
   });
 
   function toggle(catId: string) {
@@ -148,6 +161,10 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
                     className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg hover:bg-white/20 transition-all"
                   >
                     <span className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 truncate">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getFeedHealthColor(feed.last_article_at)}`}
+                        title={feed.last_article_at ? `Last article: ${formatDistanceToNow(new Date(feed.last_article_at), { addSuffix: true })}` : "No articles yet"}
+                      />
                       <span>{feed.emoji}</span>
                       <span className="truncate">{feed.name}</span>
                     </span>
@@ -175,6 +192,17 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
           </div>
         );
       })}
+
+      {stats && (
+        <div className="mt-2 px-3 py-2.5 glass rounded-xl space-y-1">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            📰 {stats.read_today} today · {stats.read_week} this week
+          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            ⏱ {stats.reading_minutes_week}m read · 🔖 {stats.saved_total} saved
+          </p>
+        </div>
+      )}
 
       <div className="mt-auto pt-4 border-t border-white/30 dark:border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 px-2">

@@ -6,10 +6,12 @@ import dns_patch  # noqa: F401 — must be first, patches DNS resolution
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from config import PORT
 from pocketbase import pb
@@ -52,12 +54,26 @@ app.add_middleware(
 
 # ── Feeds ─────────────────────────────────────────────────────────────────
 
+async def _get_last_article_date(feed_id: str) -> Optional[str]:
+    """Get the published_at date of the most recent article for a feed."""
+    try:
+        r = await pb.list_records("articles", per_page=1, filter=f"feed_id='{feed_id}'", sort="-published_at")
+        items = r.get("items", [])
+        return items[0]["published_at"] if items else None
+    except Exception:
+        return None
+
+
 @app.get("/api/feeds")
 async def get_feeds(category: Optional[str] = None):
     """List all feeds, optionally filtered by category."""
     f = f"category='{category}'" if category else ""
     result = await pb.list_records("feeds", per_page=200, filter=f, sort="category,name")
-    return result.get("items", [])
+    feeds = result.get("items", [])
+    dates = await asyncio.gather(*[_get_last_article_date(feed["id"]) for feed in feeds])
+    for feed, date in zip(feeds, dates):
+        feed["last_article_at"] = date
+    return feeds
 
 
 @app.post("/api/feeds")
@@ -127,12 +143,37 @@ async def _fetch_single_feed(feed_record: dict):
 
 # ── Articles ──────────────────────────────────────────────────────────────
 
+@app.get("/api/articles/export")
+async def export_saved_articles():
+    """Export all saved articles as a JSON file attachment."""
+    all_articles = []
+    page = 1
+    while True:
+        result = await pb.list_records(
+            "articles", page=page, per_page=100,
+            filter="is_saved=true", sort="-published_at", expand="feed_id",
+        )
+        items = result.get("items", [])
+        if not items:
+            break
+        all_articles.extend(items)
+        if result.get("page", 1) >= result.get("totalPages", 1):
+            break
+        page += 1
+    date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return JSONResponse(
+        content=all_articles,
+        headers={"Content-Disposition": f"attachment; filename=saved-articles-{date_str}.json"},
+    )
+
+
 @app.get("/api/articles")
 async def get_articles(
     category: Optional[str] = Query(None),
     feed_id: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     is_saved: Optional[bool] = Query(None),
+    is_read: Optional[bool] = Query(None),
     fetch_status: Optional[str] = Query(None),
     published_after: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
@@ -149,6 +190,8 @@ async def get_articles(
         filters.append(f"(title~'{safe_search}'||description~'{safe_search}')")
     if is_saved is not None:
         filters.append(f"is_saved={str(is_saved).lower()}")
+    if is_read is not None:
+        filters.append(f"is_read={str(is_read).lower()}")
     if fetch_status in ("full", "summary"):
         filters.append(f"fetch_status='{fetch_status}'")
     if published_after:
@@ -252,6 +295,49 @@ async def reset_saved():
             await pb.delete_record("articles", article["id"])
             total += 1
     return {"deleted": total}
+
+
+# ── Stats ─────────────────────────────────────────────────────────────────
+
+@app.get("/api/stats")
+async def get_stats():
+    """Return reading statistics."""
+    now = datetime.now(timezone.utc)
+    today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat().replace("+00:00", "Z")
+    week_ago = (now - timedelta(days=7)).isoformat().replace("+00:00", "Z")
+
+    async def read_today_count():
+        r = await pb.list_records("articles", per_page=1, filter=f"is_read=true&&updated>='{today_midnight}'")
+        return r.get("totalItems", 0)
+
+    async def read_week_data():
+        return await pb.list_records("articles", per_page=200, filter=f"is_read=true&&updated>='{week_ago}'")
+
+    async def saved_count():
+        r = await pb.list_records("articles", per_page=1, filter="is_saved=true")
+        return r.get("totalItems", 0)
+
+    async def active_feeds_count():
+        r = await pb.list_records("feeds", per_page=1, filter="is_active=true")
+        return r.get("totalItems", 0)
+
+    read_today, week_data, saved_total, active_feeds = await asyncio.gather(
+        read_today_count(), read_week_data(), saved_count(), active_feeds_count()
+    )
+
+    read_week_items = week_data.get("items", [])
+    read_week = week_data.get("totalItems", 0)
+    reading_minutes_week = sum(
+        max(1, (item.get("word_count") or 0) // 200) for item in read_week_items
+    )
+
+    return {
+        "read_today": read_today,
+        "read_week": read_week,
+        "saved_total": saved_total,
+        "active_feeds": active_feeds,
+        "reading_minutes_week": reading_minutes_week,
+    }
 
 
 # ── Refresh ───────────────────────────────────────────────────────────────

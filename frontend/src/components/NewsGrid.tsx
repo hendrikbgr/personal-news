@@ -145,6 +145,7 @@ export default function NewsGrid({ filters, refreshKey, sidebarOpen = true, view
                     article={article}
                     onClick={() => setSelectedId(article.id)}
                     onSavedChange={handleSavedChange}
+                    onRead={(id) => setAllArticles(prev => prev.map(a => a.id === id ? { ...a, is_read: true } : a))}
                     viewStyle="list"
                     isFocused={focusedIndex === index}
                     cardRef={(el) => { cardRefs.current[index] = el; }}
@@ -163,6 +164,7 @@ export default function NewsGrid({ filters, refreshKey, sidebarOpen = true, view
                     article={article}
                     onClick={() => setSelectedId(article.id)}
                     onSavedChange={handleSavedChange}
+                    onRead={(id) => setAllArticles(prev => prev.map(a => a.id === id ? { ...a, is_read: true } : a))}
                     viewStyle="grid"
                     isFocused={focusedIndex === index}
                     cardRef={(el) => { cardRefs.current[index] = el; }}

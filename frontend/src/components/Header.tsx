@@ -3,8 +3,8 @@
 import { useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
-import { Search, RefreshCw, Bookmark, X, Menu, Settings, LayoutGrid, List, CheckCheck, Moon, Sun } from "lucide-react";
-import { triggerRefresh, getStatus } from "@/lib/api";
+import { Search, RefreshCw, Bookmark, X, Menu, Settings, LayoutGrid, List, CheckCheck, Moon, Sun, Download, History } from "lucide-react";
+import { triggerRefresh, getStatus, exportSaved } from "@/lib/api";
 import type { FetchStatus } from "@/lib/types";
 import { useTheme } from "./ThemeProvider";
 
@@ -38,6 +38,7 @@ export default function Header({
   const [refreshing, setRefreshing] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [markDone, setMarkDone] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
 
   const { data: status } = useSWR<FetchStatus>("status", getStatus, {
@@ -52,6 +53,23 @@ export default function Header({
       onRefreshed?.();
     } finally {
       setTimeout(() => setRefreshing(false), 2000);
+    }
+  }
+
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const blob = await exportSaved();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `saved-articles-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+    finally {
+      setExporting(false);
     }
   }
 
@@ -167,6 +185,18 @@ export default function Header({
           <span className="hidden md:block">Saved</span>
         </button>
 
+        {showSaved && (
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/40 active:bg-white/50 transition-all disabled:opacity-60"
+            title="Export saved articles as JSON"
+          >
+            <Download className={`w-4 h-4 ${exporting ? "animate-pulse" : ""}`} />
+            <span className="hidden md:block">Export</span>
+          </button>
+        )}
+
         <button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -176,6 +206,15 @@ export default function Header({
           <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
           <span className="hidden md:block">Refresh</span>
         </button>
+
+        <Link
+          href="/history"
+          className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/40 active:bg-white/50 transition-all"
+          title="Read history"
+        >
+          <History className="w-4 h-4" />
+          <span className="hidden md:block">History</span>
+        </Link>
 
         <Link
           href="/manage"

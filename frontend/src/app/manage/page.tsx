@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import {
@@ -285,6 +285,17 @@ export default function ManagePage() {
   const [confirmDelete, setConfirmDelete] = useState<{ type: "category" | "feed"; id: string; name: string } | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [autoMarkRead, setAutoMarkRead] = useState(false);
+
+  useEffect(() => {
+    setAutoMarkRead(localStorage.getItem("auto-mark-read") === "true");
+  }, []);
+
+  function handleAutoMarkReadToggle() {
+    const newVal = !autoMarkRead;
+    setAutoMarkRead(newVal);
+    localStorage.setItem("auto-mark-read", String(newVal));
+  }
 
   // ── Category handlers ──────────────────────────────────────────────
 
@@ -537,6 +548,34 @@ export default function ManagePage() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* ── Reading Preferences ─────────────────────────────── */}
+      <section className="glass-strong rounded-3xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Reading Preferences</h2>
+        </div>
+        <div className="flex items-center justify-between gap-4 glass rounded-2xl p-4">
+          <div>
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Auto-mark as read on scroll</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Articles visible for 1.5s are automatically marked as read.
+            </p>
+          </div>
+          <button
+            onClick={handleAutoMarkReadToggle}
+            className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-all ${
+              autoMarkRead ? "bg-indigo-400" : "bg-gray-300 dark:bg-gray-600"
+            }`}
+            title={autoMarkRead ? "Disable" : "Enable"}
+          >
+            <span
+              className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                autoMarkRead ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </button>
         </div>
       </section>
 

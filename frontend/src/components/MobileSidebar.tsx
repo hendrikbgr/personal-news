@@ -3,9 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { X, ChevronDown, ChevronRight, Rss } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import type { Category, Feed } from "@/lib/types";
 import { getFeeds, getCategories, toggleFeed } from "@/lib/api";
 import { getCategoryStyle } from "@/lib/categoryColors";
+
+function getFeedHealthColor(last?: string): string {
+  if (!last) return "bg-gray-300 dark:bg-gray-600";
+  const age = Date.now() - new Date(last).getTime();
+  if (age < 24 * 3_600_000) return "bg-emerald-400";
+  if (age < 72 * 3_600_000) return "bg-amber-400";
+  return "bg-red-400";
+}
 
 interface Props {
   open: boolean;
@@ -164,6 +173,10 @@ export default function MobileSidebar({
                         className="flex items-center justify-between gap-2 py-2.5 px-2 rounded-lg active:bg-white/20 transition-all"
                       >
                         <span className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 truncate">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getFeedHealthColor(feed.last_article_at)}`}
+                            title={feed.last_article_at ? `Last article: ${formatDistanceToNow(new Date(feed.last_article_at), { addSuffix: true })}` : "No articles yet"}
+                          />
                           <span>{feed.emoji}</span>
                           <span className="truncate">{feed.name}</span>
                         </span>

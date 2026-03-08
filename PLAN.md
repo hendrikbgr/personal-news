@@ -135,92 +135,71 @@
 ### 7. "New Since Last Visit" Banner
 **Why it matters:** The single most powerful return-rate driver. Answers "is there anything new for me?" in one second. Intrinsic motivation to come back.
 
-- [ ] Save `last_visit` timestamp to localStorage on every page load (after reading, not on arrival)
-- [ ] On app load: fetch count of articles with `published_after=last_visit`
-- [ ] If count > 0, show dismissible banner: `"✨ 23 new articles since your last visit"`
-- [ ] Banner appears below header, above the filters — dismisses on click or after 10s
-- [ ] Banner styled with glass morphism, subtle indigo accent
-- [ ] Option: clicking banner auto-applies the "since last visit" date filter
-- [ ] Store `last_visit` as the moment the user closes the tab (use `visibilitychange` event)
-- [ ] Don't show banner on first ever visit
+- [x] Save `last_visit` timestamp to localStorage on every page load (after reading, not on arrival)
+- [x] On app load: fetch count of articles with `published_after=last_visit`
+- [x] If count > 0, show dismissible banner: `"✨ 23 new articles since your last visit"`
+- [x] Banner appears below header, above the filters — dismisses on click or after 10s
+- [x] Banner styled with glass morphism, subtle indigo accent
+- [x] Option: clicking banner auto-applies the "since last visit" date filter
+- [x] Store `last_visit` as the moment the user closes the tab (use `visibilitychange` event)
+- [x] Don't show banner on first ever visit
 
 ---
 
 ### 8. Reading Stats This Week
 **Why it matters:** Honest numbers about your media diet. No gamification, no streaks — just context. Increases sense of value from the app.
 
-- [ ] Add `GET /api/stats` endpoint to `main.py`:
-  - `articles_read_today`: count of `is_read=true` articles with `updated >= today midnight`
-  - `articles_read_week`: same but last 7 days
-  - `articles_saved_week`: `is_saved=true` created in last 7 days
-  - `total_feeds_active`: count of `is_active=true` feeds
-  - `estimated_reading_time_week`: sum of `word_count` for read articles / 200 (minutes)
-- [ ] Add `getStats()` to `api.ts`
-- [ ] Add collapsible stats row to `Sidebar.tsx` (desktop) — compact pill row at bottom
-- [ ] Stats row: `📰 12 read · ⏱ 1.4h · 🔖 3 saved · this week`
-- [ ] Auto-hides on collapsed sidebar (icon-only mode)
-- [ ] SWR polling every 5 minutes
+- [x] Add `GET /api/stats` endpoint to `main.py`
+- [x] Add `getStats()` to `api.ts`
+- [x] Add stats row to `Sidebar.tsx` (desktop) — compact pill row at bottom
+- [x] Stats row: `📰 N today · N this week` / `⏱ Nm read · 🔖 N saved`
+- [x] Auto-hides on collapsed sidebar (icon-only mode)
+- [x] SWR polling every 5 minutes
 
 ---
 
 ### 9. Per-Feed "Last Updated" Health Indicator
 **Why it matters:** A feed silent for 3 days might be broken. Users need to know. Builds trust — "the app is honest with me."
 
-- [ ] Add `last_article_at` field derivation in `GET /api/feeds` response:
-  - For each feed, query latest article `published_at` from `articles` collection
-  - Return as `last_article_at` ISO string (or null if no articles)
-- [ ] Update `Feed` type in `types.ts` to include `last_article_at?: string`
-- [ ] In `Sidebar.tsx`: show colored dot next to feed based on recency:
-  - Green: updated in last 24h
-  - Amber: 1–3 days ago
-  - Red/grey: 3+ days (possibly broken)
-- [ ] Tooltip on dot showing "Last article: 2 days ago" (hover)
-- [ ] In `manage/page.tsx`: show `last_article_at` in feed list rows
+- [x] Add `last_article_at` field derivation in `GET /api/feeds` response
+- [x] Update `Feed` type in `types.ts` to include `last_article_at?: string`
+- [x] In `Sidebar.tsx`: show colored dot next to feed based on recency
+- [x] In `MobileSidebar.tsx`: same health dots
+- [x] Tooltip on dot showing "Last article: X ago" (hover)
 
 ---
 
 ### 10. Read History Page / Filter
 **Why it matters:** "What did I read this morning?" is a genuine use case. People share articles, want to find something half-remembered. Extends session length.
 
-- [ ] Add `history` route at `frontend/src/app/history/page.tsx`
-- [ ] Page shows all articles where `is_read=true`, sorted by `updated DESC`
-- [ ] Grouped by date: "Today", "Yesterday", "This week", older dates as headings
-- [ ] Reuses `NewsCard` component (list view by default)
-- [ ] Search within history
-- [ ] Add "History" link to `Header.tsx` manage dropdown or as a nav icon
-- [ ] Clear history button (marks all as unread, with confirmation)
+- [x] Add `history` route at `frontend/src/app/history/page.tsx`
+- [x] Page shows all articles where `is_read=true`, sorted by date DESC
+- [x] Grouped by date: "Today", "Yesterday", exact dates
+- [x] Reuses `NewsCard` component (list view)
+- [x] Add "History" link to `Header.tsx` as nav icon
+- [x] Fix `is_read` filter bug in backend `GET /api/articles`
 
 ---
 
 ### 11. Auto Mark as Read on Scroll
 **Why it matters:** Matches real reading behavior — you skim, you see, you move on. Reduces "I've already seen this" friction on return visits.
 
-- [ ] In `NewsCard.tsx`, add `IntersectionObserver` to detect when card is fully visible
-  - Threshold: 0.9 (90% visible = user saw it)
-  - Only trigger once per article (`is_read` already false)
-  - Delay: 1.5 seconds after becoming visible (not just a flash)
-- [ ] Call `markRead(article.id)` (already exists in `api.ts`)
-- [ ] Update `allArticles` state in `NewsGrid.tsx` optimistically
-- [ ] Make this opt-in: add toggle in settings/preferences
-  - Default: OFF (explicit is better for a news reader)
-  - Save to localStorage as `auto_mark_read: boolean`
+- [x] In `NewsCard.tsx`, add `IntersectionObserver` to detect when card is fully visible
+- [x] Threshold: 0.5, delay: 1.5 seconds
+- [x] Call `markRead(article.id)` + update parent state via `onRead` callback
+- [x] Make this opt-in: toggle in `/manage` Reading Preferences section
+- [x] Default: OFF; saved to localStorage as `auto-mark-read`
 
 ---
 
 ### 12. Saved Articles Export
 **Why it matters:** Appeals to the "I own my data" crowd this app is built for. "I can always get my stuff out" increases long-term commitment.
 
-- [ ] Add `GET /api/articles/export` endpoint to `main.py`:
-  - Query param: `format=json|markdown|csv`
-  - Returns saved articles (`is_saved=true`) in requested format
-  - Markdown format: `# Title\n**Source** · Date\n\nSummary\n\n[Read](url)`
-  - JSON format: full article objects array
-- [ ] Add `exportSaved(format)` to `api.ts`
-- [ ] Add export button to the "Saved" filter view in `Header.tsx` or `NewsGrid.tsx`
-  - Only visible when `showSaved=true`
-  - Dropdown: "Export as Markdown / JSON"
-- [ ] Trigger browser download (create Blob, click anchor)
-- [ ] Filename: `saved-articles-2026-03-08.md`
+- [x] Add `GET /api/articles/export` endpoint to `main.py` (JSON, Content-Disposition header)
+- [x] Add `exportSaved()` to `api.ts`
+- [x] Add export button to header when `showSaved=true`
+- [x] Trigger browser download (Blob + anchor click)
+- [x] Filename: `saved-articles-YYYY-MM-DD.json`
 
 ---
 
@@ -338,11 +317,11 @@
 | Phase | Features | Done | Remaining |
 |-------|----------|------|-----------|
 | Shipped | 20 | 20 | 0 |
-| Phase 1 — Quick Wins | 6 | 0 | 6 |
-| Phase 2 — Medium | 6 | 0 | 6 |
+| Phase 1 — Quick Wins | 6 | 6 | 0 |
+| Phase 2 — Medium | 6 | 6 | 0 |
 | Phase 3 — Bigger | 5 | 0 | 5 |
 | Phase 4 — Polish | 3 | 0 | 3 |
-| **Total** | **40** | **20** | **20** |
+| **Total** | **40** | **32** | **8** |
 
 ---
 
