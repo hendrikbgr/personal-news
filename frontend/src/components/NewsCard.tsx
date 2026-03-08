@@ -150,7 +150,7 @@ export default function NewsCard({ article, onClick, onSavedChange, onRead, view
       ref={mergedRef}
       onClick={onClick}
       className={`glass-card rounded-2xl overflow-hidden cursor-pointer group animate-fadeInUp ${focusRing}`}
-      style={{ boxShadow: `0 4px 24px ${s.glow}` }}
+      style={{ boxShadow: `0 4px 24px ${s.glow}`, transform: "translateZ(0)" }}
     >
       {/* Mobile: horizontal layout */}
       <div className="relative flex sm:hidden">
