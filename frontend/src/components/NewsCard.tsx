@@ -178,7 +178,7 @@ export default function NewsCard({ article, onClick, onSavedChange, onRead, view
         {/* Corner gradient + save button */}
         <div
           className="absolute top-0 right-0 w-16 h-16 z-10 pointer-events-none"
-          style={{ background: "linear-gradient(to bottom left, rgba(0,0,0,0.35) 0%, transparent 60%)" }}
+          style={{ background: "linear-gradient(to bottom left, rgba(0,0,0,0.20) 0%, transparent 70%)" }}
         />
         <SaveButton
           saved={saved}
@@ -236,7 +236,7 @@ export default function NewsCard({ article, onClick, onSavedChange, onRead, view
           )}
           <div
             className="absolute top-0 right-0 w-24 h-24 pointer-events-none"
-            style={{ background: "linear-gradient(to bottom left, rgba(0,0,0,0.35) 0%, transparent 60%)" }}
+            style={{ background: "linear-gradient(to bottom left, rgba(0,0,0,0.20) 0%, transparent 70%)" }}
           />
           <SaveButton
             saved={saved}

@@ -28,7 +28,7 @@ export default function SaveButton({ saved, onToggle, size = "md", variant = "ov
   return (
     <button
       onClick={handleClick}
-      className={`group/save ${className}`}
+      className={`group/save bg-transparent border-0 outline-none ${className}`}
       title={saved ? "Unsave" : "Save for later"}
     >
       <span className="relative inline-flex items-center justify-center">
