@@ -6,6 +6,7 @@ import asyncio
 import logging
 import random
 import re
+import threading
 from datetime import datetime, timezone
 from typing import Optional
 import feedparser
@@ -42,9 +43,23 @@ _BROWSER_HEADERS = {
 
 
 # ── Proxy pool ────────────────────────────────────────────────────────────────
+# Cache a single proxy and reuse it across articles to minimise pool API calls.
+# threading.Lock works from both async context and executor threads.
+
+_proxy_lock = threading.Lock()
+_proxy_cached: Optional[str] = None
+_proxy_uses: int = 0
+_PROXY_MAX_USES = 15  # reuse the same proxy for up to this many articles
+
 
 async def _get_proxy() -> Optional[str]:
-    """Fetch a fresh proxy from the pool. Returns 'host:port' or None."""
+    """Return a cached proxy or fetch a fresh one from the pool."""
+    global _proxy_cached, _proxy_uses
+    with _proxy_lock:
+        if _proxy_cached and _proxy_uses < _PROXY_MAX_USES:
+            _proxy_uses += 1
+            return _proxy_cached
+    # Fetch outside the lock so we don't block other coroutines
     try:
         async with httpx.AsyncClient(timeout=5) as client:
             r = await client.get(
@@ -52,14 +67,24 @@ async def _get_proxy() -> Optional[str]:
                 params={"api_key": PROXY_API_KEY},
             )
             r.raise_for_status()
-            return r.json().get("proxy")
+            proxy = r.json().get("proxy")
+        with _proxy_lock:
+            _proxy_cached = proxy
+            _proxy_uses = 1
+        logger.debug("Fetched fresh proxy %s", proxy)
+        return proxy
     except Exception as e:
         logger.debug("Proxy pool unavailable: %s", e)
         return None
 
 
 def _sync_ban_proxy(proxy: str) -> None:
-    """Report a bad proxy back to the pool (sync, runs inside executor)."""
+    """Report a bad proxy and clear the cache (sync, runs inside executor)."""
+    global _proxy_cached, _proxy_uses
+    with _proxy_lock:
+        if _proxy_cached == proxy:
+            _proxy_cached = None
+            _proxy_uses = 0
     try:
         with httpx.Client(timeout=5) as client:
             client.post(
@@ -113,18 +138,35 @@ def _clean_html(html: str) -> str:
 # ── Article download ──────────────────────────────────────────────────────────
 
 async def _extract_article(url: str) -> dict:
-    """Use newspaper4k to download and parse the full article, with retries."""
+    """
+    Download and parse a full article with retries.
+
+    Strategy (minimises proxy pool calls):
+      Attempt 1 — direct, no proxy.
+      Attempt 2 — fetch one cached proxy; try with proxy.
+                  If proxy itself errors, ban it and retry direct.
+      Attempt 3 — direct again (proxy already exhausted/banned).
+    """
     loop = asyncio.get_event_loop()
     last_exc: Optional[Exception] = None
+    proxy: Optional[str] = None
 
     for attempt in range(MAX_RETRIES):
-        proxy = await _get_proxy()
+        # Only fetch a proxy on the second attempt (first is always direct)
+        if attempt == 1 and proxy is None:
+            proxy = await _get_proxy()
+
         try:
-            return await loop.run_in_executor(None, _download_article, url, proxy)
+            current_proxy = proxy if attempt == 1 else None
+            return await loop.run_in_executor(None, _download_article, url, current_proxy)
         except Exception as e:
             last_exc = e
             if attempt == MAX_RETRIES - 1:
                 break
+            # Ban the proxy if it was used and failed on attempt 2
+            if attempt == 1 and proxy:
+                await loop.run_in_executor(None, _sync_ban_proxy, proxy)
+                proxy = None
             delay = RETRY_BACKOFF_BASE * (2 ** attempt)
             logger.warning(
                 "Article download %s failed (attempt %d/%d): %s — retrying in %ds",
@@ -140,45 +182,28 @@ def _download_article(url: str, proxy: Optional[str] = None) -> dict:
     """
     Synchronous newspaper4k download (runs in executor). Raises on failure.
 
-    Strategy:
-    1. Pre-fetch HTML with httpx using a proxy (if available) + realistic browser
-       headers (rotated UA, Google Referer, Accept-Language).
-    2. If proxy fetch fails: ban the proxy, retry direct (no proxy).
-    3. Pass pre-fetched HTML to newspaper4k via download(input_html=...) so
-       newspaper4k only does parsing, not the HTTP request.
-    4. Fall back to newspaper4k's own HTTP stack if all httpx attempts fail.
+    Pre-fetches HTML with httpx (optionally via proxy) then feeds it to
+    newspaper4k for parsing. Falls back to newspaper4k's own HTTP if httpx fails.
     """
     ua = random.choice(_USER_AGENTS)
+    headers = {**_BROWSER_HEADERS, "User-Agent": ua}
     html: Optional[str] = None
 
-    # -- attempt 1: httpx with proxy ------------------------------------------
+    # -- httpx pre-fetch (with or without proxy) ------------------------------
+    client_kwargs: dict = {"timeout": 15, "follow_redirects": True}
     if proxy:
         proxy_url = f"http://{proxy}"
-        try:
-            with httpx.Client(
-                timeout=15,
-                follow_redirects=True,
-                proxies={"http://": proxy_url, "https://": proxy_url},
-            ) as client:
-                resp = client.get(url, headers={**_BROWSER_HEADERS, "User-Agent": ua})
-                resp.raise_for_status()
-                html = resp.text
-        except Exception as e:
-            logger.debug(
-                "Proxy pre-fetch failed for %s via %s (%s) — banning proxy, retrying direct",
-                url, proxy, e,
-            )
-            _sync_ban_proxy(proxy)
+        client_kwargs["proxies"] = {"http://": proxy_url, "https://": proxy_url}
 
-    # -- attempt 2: httpx direct (no proxy) -----------------------------------
-    if html is None:
-        try:
-            with httpx.Client(timeout=15, follow_redirects=True) as client:
-                resp = client.get(url, headers={**_BROWSER_HEADERS, "User-Agent": ua})
-                resp.raise_for_status()
-                html = resp.text
-        except Exception as e:
-            logger.debug("httpx direct pre-fetch failed for %s (%s) — falling back to newspaper4k", url, e)
+    try:
+        with httpx.Client(**client_kwargs) as client:
+            resp = client.get(url, headers=headers)
+            resp.raise_for_status()
+            html = resp.text
+    except Exception as e:
+        logger.debug("httpx pre-fetch failed for %s (%s) — falling back to newspaper4k", url, e)
+        if proxy:
+            raise  # let _extract_article handle ban + retry
 
     # -- newspaper4k parse ----------------------------------------------------
     a = Article(url, language="en", fetch_images=True, memoize_articles=False,

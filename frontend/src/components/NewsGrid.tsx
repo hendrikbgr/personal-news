@@ -59,9 +59,9 @@ export default function NewsGrid({ filters, refreshKey, sidebarOpen = true, view
     }
   );
 
-  // Infinite scroll
+  // Infinite scroll — stop if there's an error (e.g. backend not yet ready)
   useEffect(() => {
-    if (!loaderRef.current || !hasMore) return;
+    if (!loaderRef.current || !hasMore || error) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !isLoading) setPage((p) => p + 1);
@@ -70,7 +70,7 @@ export default function NewsGrid({ filters, refreshKey, sidebarOpen = true, view
     );
     observer.observe(loaderRef.current);
     return () => observer.disconnect();
-  }, [hasMore, isLoading]);
+  }, [hasMore, isLoading, error]);
 
   const handleSavedChange = useCallback((updated: Article) => {
     setAllArticles((prev) =>
