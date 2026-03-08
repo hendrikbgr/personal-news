@@ -88,17 +88,17 @@ export default function MobileSidebar({
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-gray-300" />
+          <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pb-3 border-b border-white/30">
-          <h2 className="text-base font-bold text-gray-800">Categories & Feeds</h2>
+        <div className="flex items-center justify-between px-5 pb-3 border-b border-white/30 dark:border-white/10">
+          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Categories & Feeds</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-xl glass active:bg-white/50 transition-all"
           >
-            <X className="w-4 h-4 text-gray-500" />
+            <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -109,8 +109,8 @@ export default function MobileSidebar({
             onClick={() => handleSelectCategory(null)}
             className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
               selectedCategory === null
-                ? "glass-strong text-indigo-700 shadow-sm"
-                : "text-gray-600 active:bg-white/30"
+                ? "glass-strong text-indigo-700 dark:text-indigo-300 shadow-sm"
+                : "text-gray-600 dark:text-gray-300 active:bg-white/30"
             }`}
           >
             <span className="text-lg">📋</span>
@@ -134,7 +134,7 @@ export default function MobileSidebar({
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
                     isSelected
                       ? `${s.bg} ${s.text} shadow-sm`
-                      : "text-gray-600 active:bg-white/30"
+                      : "text-gray-600 dark:text-gray-300 active:bg-white/30"
                   }`}
                 >
                   <span className="text-lg">{cat.emoji}</span>
@@ -157,13 +157,13 @@ export default function MobileSidebar({
                 </button>
 
                 {isOpen && (
-                  <div className="ml-4 mt-1 mb-2 space-y-0.5 border-l-2 border-white/40 pl-3">
+                  <div className="ml-4 mt-1 mb-2 space-y-0.5 border-l-2 border-white/40 dark:border-white/10 pl-3">
                     {catFeeds.map((feed) => (
                       <div
                         key={feed.id}
                         className="flex items-center justify-between gap-2 py-2.5 px-2 rounded-lg active:bg-white/20 transition-all"
                       >
-                        <span className="flex items-center gap-2 text-sm text-gray-600 truncate">
+                        <span className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 truncate">
                           <span>{feed.emoji}</span>
                           <span className="truncate">{feed.name}</span>
                         </span>
@@ -171,7 +171,7 @@ export default function MobileSidebar({
                           onClick={(e) => handleToggleFeed(e, feed)}
                           disabled={togglingId === feed.id}
                           className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-all ${
-                            feed.is_active ? "bg-indigo-400" : "bg-gray-300"
+                            feed.is_active ? "bg-indigo-400" : "bg-gray-300 dark:bg-gray-600"
                           } ${togglingId === feed.id ? "opacity-50" : ""}`}
                           title={feed.is_active ? "Disable feed" : "Enable feed"}
                         >
@@ -184,7 +184,7 @@ export default function MobileSidebar({
                       </div>
                     ))}
                     {catFeeds.length === 0 && (
-                      <p className="text-xs text-gray-400 py-2 px-2">No feeds available</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 py-2 px-2">No feeds available</p>
                     )}
                   </div>
                 )}
@@ -194,7 +194,7 @@ export default function MobileSidebar({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-white/30 flex items-center gap-2 text-xs text-gray-400">
+        <div className="px-5 py-3 border-t border-white/30 dark:border-white/10 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
           <Rss className="w-3.5 h-3.5" />
           <span>Toggle feeds to start reading</span>
         </div>

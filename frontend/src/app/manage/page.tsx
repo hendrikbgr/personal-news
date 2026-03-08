@@ -68,7 +68,7 @@ function CategoryForm({
     <div className="flex flex-col gap-3 p-4 glass rounded-2xl animate-fadeInUp">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Slug (ID)</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Slug (ID)</label>
           <input
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })}
@@ -78,7 +78,7 @@ function CategoryForm({
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Name</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Name</label>
           <input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -89,7 +89,7 @@ function CategoryForm({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Emoji</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Emoji</label>
           <input
             value={form.emoji}
             onChange={(e) => setForm({ ...form, emoji: e.target.value })}
@@ -97,7 +97,7 @@ function CategoryForm({
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Color</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Color</label>
           <div className="flex gap-1.5 flex-wrap pt-1">
             {COLORS.map((c) => (
               <button
@@ -114,7 +114,7 @@ function CategoryForm({
         </div>
       </div>
       <div className="flex gap-2 justify-end pt-1">
-        <button onClick={onCancel} className="px-3 py-1.5 rounded-xl glass text-sm text-gray-600 hover:bg-white/40">
+        <button onClick={onCancel} className="px-3 py-1.5 rounded-xl glass text-sm text-gray-600 dark:text-gray-300 hover:bg-white/40">
           Cancel
         </button>
         <button
@@ -160,7 +160,7 @@ function FeedForm({
     <div className="flex flex-col gap-3 p-4 glass rounded-2xl animate-fadeInUp">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Feed Name</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Feed Name</label>
           <input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -169,7 +169,7 @@ function FeedForm({
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">RSS URL</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">RSS URL</label>
           <input
             value={form.url}
             onChange={(e) => setForm({ ...form, url: e.target.value })}
@@ -180,7 +180,7 @@ function FeedForm({
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Category</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Category</label>
           <select
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -194,7 +194,7 @@ function FeedForm({
           </select>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Source Label</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Source Label</label>
           <input
             value={form.source}
             onChange={(e) => setForm({ ...form, source: e.target.value })}
@@ -203,7 +203,7 @@ function FeedForm({
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Emoji</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Emoji</label>
           <input
             value={form.emoji}
             onChange={(e) => setForm({ ...form, emoji: e.target.value })}
@@ -212,7 +212,7 @@ function FeedForm({
         </div>
       </div>
       <div className="flex gap-2 justify-end pt-1">
-        <button onClick={onCancel} className="px-3 py-1.5 rounded-xl glass text-sm text-gray-600 hover:bg-white/40">
+        <button onClick={onCancel} className="px-3 py-1.5 rounded-xl glass text-sm text-gray-600 dark:text-gray-300 hover:bg-white/40">
           Cancel
         </button>
         <button
@@ -251,12 +251,12 @@ function ConfirmModal({
         className="glass-strong rounded-3xl p-6 w-full max-w-sm mx-4 shadow-2xl animate-fadeInUp"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
-        <p className="text-sm text-gray-500 mb-6">{message}</p>
+        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">{title}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{message}</p>
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl glass text-sm font-medium text-gray-600 hover:bg-white/40"
+            className="px-4 py-2 rounded-xl glass text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/40"
           >
             Cancel
           </button>
@@ -368,11 +368,11 @@ export default function ManagePage() {
           className="p-2 rounded-xl glass hover:bg-white/40 transition-all"
           title="Back to dashboard"
         >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         </Link>
         <div>
-          <h1 className="text-lg font-bold text-gray-800">Manage Feeds &amp; Categories</h1>
-          <p className="text-xs text-gray-500">Add, edit, or remove RSS feeds and categories</p>
+          <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100">Manage Feeds &amp; Categories</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Add, edit, or remove RSS feeds and categories</p>
         </div>
       </div>
 
@@ -381,7 +381,7 @@ export default function ManagePage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <FolderOpen className="w-5 h-5 text-gray-500" />
-            <h2 className="text-base font-bold text-gray-800">Categories</h2>
+            <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Categories</h2>
             <span className="text-xs text-gray-400">({categories.length})</span>
           </div>
           {catForm === null && (
@@ -418,8 +418,8 @@ export default function ManagePage() {
                     {cat.emoji}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-gray-800 truncate">{cat.name}</p>
-                    <p className="text-xs text-gray-400">{cat.id} &middot; {feedsByCategory[cat.id]?.length ?? 0} feeds</p>
+                    <p className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{cat.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{cat.id} &middot; {feedsByCategory[cat.id]?.length ?? 0} feeds</p>
                   </div>
                   {cat.pb_id && (
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -451,7 +451,7 @@ export default function ManagePage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Rss className="w-5 h-5 text-gray-500" />
-            <h2 className="text-base font-bold text-gray-800">RSS Feeds</h2>
+            <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">RSS Feeds</h2>
             <span className="text-xs text-gray-400">({feeds.length})</span>
           </div>
           {feedForm === null && (
@@ -477,9 +477,9 @@ export default function ManagePage() {
 
             return (
               <div key={cat.id}>
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-2">
                   <span>{cat.emoji}</span> {cat.name}
-                  <span className="text-gray-300">({catFeeds.length})</span>
+                  <span className="text-gray-300 dark:text-gray-600">({catFeeds.length})</span>
                 </h3>
                 <div className="space-y-2">
                   {catFeeds.map((feed) => (
@@ -502,8 +502,8 @@ export default function ManagePage() {
                         <div className="glass rounded-2xl p-3 flex items-center gap-3 group">
                           <span className="text-lg flex-shrink-0">{feed.emoji}</span>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-gray-800 truncate">{feed.name}</p>
-                            <p className="text-xs text-gray-400 truncate">
+                            <p className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{feed.name}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
                               {feed.source ? `${feed.source} · ` : ""}{feed.url}
                             </p>
                           </div>
@@ -544,12 +544,12 @@ export default function ManagePage() {
       <section className="glass-strong rounded-3xl p-5 border border-red-200/40">
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle className="w-5 h-5 text-red-500" />
-          <h2 className="text-base font-bold text-gray-800">Danger Zone</h2>
+          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Danger Zone</h2>
         </div>
         <div className="flex items-center justify-between gap-4 glass rounded-2xl p-4">
           <div>
-            <p className="text-sm font-medium text-gray-800">Reset Database</p>
-            <p className="text-xs text-gray-500">
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Reset Database</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Permanently delete all articles. They will be re-fetched on the next refresh.
             </p>
           </div>
@@ -572,15 +572,15 @@ export default function ManagePage() {
             className="glass-strong rounded-3xl p-6 w-full max-w-sm mx-4 shadow-2xl animate-fadeInUp"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Reset Database?</h3>
-            <p className="text-sm text-gray-500 mb-6">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">Reset Database?</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
               This will permanently delete every article from the database.
               They will be re-fetched on the next refresh.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowResetConfirm(false)}
-                className="px-4 py-2 rounded-xl glass text-sm font-medium text-gray-600 hover:bg-white/40"
+                className="px-4 py-2 rounded-xl glass text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/40"
               >
                 Cancel
               </button>

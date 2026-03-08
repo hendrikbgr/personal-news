@@ -14,9 +14,12 @@ interface Props {
   article: Article;
   onClick: () => void;
   onSavedChange?: (article: Article) => void;
+  viewStyle?: "grid" | "list";
+  isFocused?: boolean;
+  cardRef?: (el: HTMLElement | null) => void;
 }
 
-export default function NewsCard({ article, onClick, onSavedChange }: Props) {
+export default function NewsCard({ article, onClick, onSavedChange, viewStyle = "grid", isFocused, cardRef }: Props) {
   const [saved, setSaved] = useState(article.is_saved);
   const [savingInFlight, setSavingInFlight] = useState(false);
 
@@ -44,16 +47,71 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
     }
   }
 
+  const focusRing = isFocused ? "ring-2 ring-indigo-400/70 ring-offset-1" : "";
+
+  // ── List view ──────────────────────────────────────────────────────────────
+  if (viewStyle === "list") {
+    return (
+      <article
+        ref={cardRef}
+        onClick={onClick}
+        className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 transition-colors ${focusRing}`}
+      >
+        {/* Unread dot */}
+        <span className={`w-2 h-2 flex-shrink-0 rounded-full ${!article.is_read ? "bg-indigo-500" : "bg-transparent"}`} />
+
+        {/* Feed emoji */}
+        <div className={`w-7 h-7 flex-shrink-0 rounded-lg flex items-center justify-center text-base ${s.bg}`}>
+          {article.expand?.feed_id?.emoji ?? "📰"}
+        </div>
+
+        {/* Title */}
+        <span className="flex-1 min-w-0 text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+          {article.title}
+        </span>
+
+        {/* Meta */}
+        <span className="flex items-center gap-2 flex-shrink-0 text-xs text-gray-400 dark:text-gray-500">
+          {article.expand?.feed_id?.source && (
+            <span className="hidden sm:block truncate max-w-[80px]">{article.expand.feed_id.source}</span>
+          )}
+          {publishedLabel && <span className="hidden md:block">{publishedLabel}</span>}
+          {readTime && (
+            <span className="hidden lg:flex items-center gap-0.5">
+              <Clock className="w-3 h-3" />
+              {readTime}
+            </span>
+          )}
+          {article.fetch_status === "full" ? (
+            <FileText className="w-3.5 h-3.5 text-emerald-500" title="Full article" />
+          ) : (
+            <Rss className="w-3.5 h-3.5 text-amber-500" title="RSS summary" />
+          )}
+        </span>
+
+        {/* Save */}
+        <SaveButton
+          saved={saved}
+          onToggle={handleSave}
+          size="sm"
+          className="flex-shrink-0 p-1.5 rounded-full transition-all hover:scale-110"
+        />
+      </article>
+    );
+  }
+
+  // ── Grid view ──────────────────────────────────────────────────────────────
   return (
     <article
+      ref={cardRef}
       onClick={onClick}
-      className="glass-card rounded-2xl overflow-hidden cursor-pointer group animate-fadeInUp"
+      className={`glass-card rounded-2xl overflow-hidden cursor-pointer group animate-fadeInUp ${focusRing}`}
       style={{ boxShadow: `0 4px 24px ${s.glow}` }}
     >
       {/* Mobile: horizontal layout */}
       <div className="relative flex sm:hidden">
         {/* Thumbnail */}
-        <div className="relative w-28 flex-shrink-0 bg-white/20">
+        <div className="relative w-28 flex-shrink-0 bg-white/20 dark:bg-white/5">
           {article.image_url ? (
             <Image
               src={article.image_url}
@@ -73,7 +131,7 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
           )}
         </div>
 
-        {/* Corner gradient + save button — top right of card */}
+        {/* Corner gradient + save button */}
         <div
           className="absolute top-0 right-0 w-16 h-16 z-10 pointer-events-none"
           style={{ background: "linear-gradient(to bottom left, rgba(0,0,0,0.35) 0%, transparent 60%)" }}
@@ -91,11 +149,11 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
             <div className="flex items-center gap-2 mb-1">
               <CategoryBadge category={article.category} />
             </div>
-            <h3 className="font-semibold text-gray-800 text-sm leading-snug line-clamp-2">
+            <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm leading-snug line-clamp-2">
               {article.title}
             </h3>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             {publishedLabel && <span className="truncate">{publishedLabel}</span>}
             {readTime && (
               <span className="flex items-center gap-0.5 flex-shrink-0">
@@ -117,7 +175,7 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
       {/* Desktop: vertical card layout */}
       <div className="hidden sm:block">
         {/* Image */}
-        <div className="relative h-44 bg-white/20 overflow-hidden">
+        <div className="relative h-44 bg-white/20 dark:bg-white/5 overflow-hidden">
           {article.image_url ? (
             <Image
               src={article.image_url}
@@ -152,23 +210,23 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
           <div className="flex items-center justify-between gap-2">
             <CategoryBadge category={article.category} />
             {article.expand?.feed_id && (
-              <span className="text-xs text-gray-500 truncate">
+              <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {article.expand.feed_id.source}
               </span>
             )}
           </div>
 
-          <h3 className="font-semibold text-gray-800 leading-snug line-clamp-3 group-hover:text-indigo-700 transition-colors">
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100 leading-snug line-clamp-3 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
             {article.title}
           </h3>
 
           {article.description && (
-            <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">
               {article.description}
             </p>
           )}
 
-          <div className="flex items-center gap-3 text-xs text-gray-500 pt-1">
+          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 pt-1">
             {publishedLabel && <span>{publishedLabel}</span>}
             {readTime && (
               <span className="flex items-center gap-1">
@@ -177,12 +235,12 @@ export default function NewsCard({ article, onClick, onSavedChange }: Props) {
               </span>
             )}
             {article.fetch_status === "full" ? (
-              <span className="flex items-center gap-1 text-emerald-600" title="Full article available">
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400" title="Full article available">
                 <FileText className="w-3 h-3" />
                 Full
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-amber-600" title="RSS summary only">
+              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400" title="RSS summary only">
                 <Rss className="w-3 h-3" />
                 Summary
               </span>

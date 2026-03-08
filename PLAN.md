@@ -44,69 +44,65 @@
 ### 1. Dark Mode
 **Why it matters:** Evening/night reading without eye strain. Increases session length and return visits. Stored in localStorage — zero server-side changes needed.
 
-- [ ] Add `dark` class toggle to `<html>` via button in `Header.tsx`
-- [ ] Save preference to localStorage (`theme: "light" | "dark"`)
-- [ ] On load, read localStorage and apply before first render (add to `<head>` script to prevent flash)
-- [ ] Update `globals.css` — add `@media (prefers-color-scheme: dark)` base styles + `.dark` class overrides
-- [ ] Update glass classes for dark mode (darker backgrounds, lighter borders)
-- [ ] Update gradient background for dark mode (deeper, muted purples/blues)
-- [ ] Update `NewsCard`, `ArticleModal`, `Sidebar`, `Header` text colors for dark
-- [ ] Update `manage/page.tsx` dark mode colors
-- [ ] Add sun/moon icon toggle in `Header.tsx` (replace or add next to existing icons)
-- [ ] Test on mobile — ensure system dark mode is respected as default
+- [x] Add `dark` class toggle to `<html>` via button in `Header.tsx`
+- [x] Save preference to localStorage (`theme: "light" | "dark"`)
+- [x] On load, read localStorage and apply before first render (add to `<head>` script to prevent flash)
+- [x] Update `globals.css` — add `@variant dark` class-based overrides (Tailwind v4)
+- [x] Update glass classes for dark mode (darker backgrounds, lighter borders)
+- [x] Update gradient background for dark mode (deeper, muted purples/blues)
+- [x] Update `NewsCard`, `ArticleModal`, `Sidebar`, `Header` text colors for dark
+- [x] Update `manage/page.tsx` dark mode colors
+- [x] Add sun/moon icon toggle in `Header.tsx` (replace or add next to existing icons)
+- [x] Test on mobile — ensure system dark mode is respected as default
 
 ---
 
 ### 2. Keyboard Navigation
 **Why it matters:** Power users who discover this never leave. Dramatically improves reading flow — hands on keyboard, no mouse needed.
 
-- [ ] Create `useKeyboardNav` hook in `frontend/src/lib/useKeyboardNav.ts`
-- [ ] `J` / `↓` — focus next article card
-- [ ] `K` / `↑` — focus previous article card
-- [ ] `Enter` / `O` — open focused article in modal
-- [ ] `Escape` — close modal (already works), or deselect focused card
-- [ ] `S` — toggle save on focused card or open modal
+- [x] Create `useKeyboardNav` hook in `frontend/src/lib/useKeyboardNav.ts`
+- [x] `J` / `↓` — focus next article card
+- [x] `K` / `↑` — focus previous article card
+- [x] `Enter` / `O` — open focused article in modal
+- [x] `Escape` — close modal (already works), or deselect focused card
+- [x] `S` — toggle save on focused card or open modal
 - [ ] `R` — trigger manual refresh
 - [ ] `G` then `S` — go to saved articles (chord shortcut)
-- [ ] Visual focus ring on focused card (keyboard-only, not mouse)
-- [ ] Add keyboard shortcut help modal (`?` key to open)
+- [x] Visual focus ring on focused card (keyboard-only, not mouse)
+- [x] Add keyboard shortcut help modal (`?` key to open)
 - [ ] Show shortcut hints in the UI (`?` icon in header → opens help overlay)
-- [ ] Wire hook into `NewsGrid.tsx` (manages focused index)
-- [ ] Wire hook into `ArticleModal.tsx` (Escape already done, add S for save)
-- [ ] Test: arrow keys don't scroll page when navigating cards
+- [x] Wire hook into `NewsGrid.tsx` (manages focused index)
+- [x] Wire hook into `ArticleModal.tsx` (Escape already done, add S for save)
+- [x] Test: arrow keys don't scroll page when navigating cards
 
 ---
 
 ### 3. Date Range Filter — Today / 24h / Week / All
 **Why it matters:** "What happened today" is the #1 reason people open a news app. A "Today" filter makes the app a daily habit trigger.
 
-- [ ] Add `publishedAfter` query param to backend `GET /api/articles` (`main.py`)
-  - Accept ISO date string, filter `published_at >= publishedAfter`
-- [ ] Add `publishedAfter?: string` to `ArticleFilters` interface (`api.ts`)
-- [ ] Add `published_after` to `getArticles()` URL params (`api.ts`)
-- [ ] Add `dateRange` state to `page.tsx`: `"today" | "24h" | "week" | null`
-- [ ] Compute `publishedAfter` ISO string from `dateRange` on render
-- [ ] Add date range filter pills to desktop status bar (Today / 24h / Week / All)
-- [ ] Add date range pills to mobile pill row
-- [ ] Include `filters.dateRange` in `NewsGrid.tsx` reset deps
-- [ ] "Today" = midnight of current day (local time), not last 24h
+- [x] Add `publishedAfter` query param to backend `GET /api/articles` (`main.py`)
+- [x] Add `publishedAfter?: string` to `ArticleFilters` interface (`api.ts`)
+- [x] Add `published_after` to `getArticles()` URL params (`api.ts`)
+- [x] Add `dateRange` state to `page.tsx`: `"today" | "24h" | "week" | null`
+- [x] Compute `publishedAfter` ISO string from `dateRange` on render
+- [x] Add date range filter pills to desktop status bar (Today / 24h / Week / All)
+- [x] Add date range pills to mobile pill row
+- [x] Include `filters.dateRange` in `NewsGrid.tsx` reset deps
+- [x] "Today" = midnight of current day (local time), not last 24h
 
 ---
 
 ### 4. Compact / List View Toggle
 **Why it matters:** Power users scan headlines. A dense list lets them cover 50 articles in 30 seconds. Saves to localStorage.
 
-- [ ] Add `viewStyle: "grid" | "list"` state in `page.tsx`, loaded from localStorage
-- [ ] Pass `viewStyle` as prop to `NewsGrid.tsx`
-- [ ] Pass `viewStyle` as prop to `NewsCard.tsx`
-- [ ] Create `ListCard` variant inside `NewsCard.tsx` (or a new `NewsListCard.tsx`):
-  - Single row: source emoji · title · category badge · time · read-time · save button
-  - No image, very compact (~48px height per row)
-  - Show unread dot as left border accent instead of image overlay
-- [ ] Update `NewsGrid.tsx` grid layout: when `list`, use `flex flex-col` instead of CSS grid
-- [ ] Add toggle button to `Header.tsx` (grid icon / list icon)
-- [ ] Save `viewStyle` to localStorage on toggle
-- [ ] Load `viewStyle` from localStorage on mount
+- [x] Add `viewStyle: "grid" | "list"` state in `page.tsx`, loaded from localStorage
+- [x] Pass `viewStyle` as prop to `NewsGrid.tsx`
+- [x] Pass `viewStyle` as prop to `NewsCard.tsx`
+- [x] Create list variant inside `NewsCard.tsx`: compact row with emoji, title, meta, save
+- [x] Update `NewsGrid.tsx` grid layout: when `list`, use glass-card container with divide-y
+- [x] Add toggle button to `Header.tsx` (grid icon / list icon)
+- [x] Save `viewStyle` to localStorage on toggle
+- [x] Load `viewStyle` from localStorage on mount
 - [ ] Mobile: list view is the default (already compact); hide toggle on mobile or keep as-is
 
 ---
@@ -114,24 +110,21 @@
 ### 5. Browser Tab Unread Count
 **Why it matters:** Oldest trick in the book — it's why people keep Gmail open all day. Zero backend changes.
 
-- [ ] Fetch total unread count from `GET /api/articles?is_read=false&per_page=1` (use `totalItems`)
-- [ ] Or derive from already-loaded articles (count unread in current session)
-- [ ] Update `document.title` to `(23) Personal News` when unread > 0
-- [ ] Reset to `Personal News` when count = 0
-- [ ] Poll count every 2 minutes (reuse SWR or a lightweight interval)
-- [ ] Add `markAllRead` button to header (clears all unread, resets tab count)
+- [x] Fetch total unread count from `GET /api/articles?is_read=false&per_page=1` (use `totalItems`)
+- [x] Update `document.title` to `(23) Personal News` when unread > 0
+- [x] Reset to `Personal News` when count = 0
+- [x] Poll count every 2 minutes (SWR with refreshInterval: 120_000)
+- [x] Add `markAllRead` button to header (clears all unread, resets tab count)
 
 ---
 
 ### 6. Mark All as Read
 **Why it matters:** Satisfying closure. Users return to check what's new *after* clearing their queue — this creates the habit loop.
 
-- [ ] Add `POST /api/articles/mark-all-read` endpoint to `main.py`
-  - Accepts optional `category` filter to mark only a category as read
-  - Uses PocketBase bulk update or iterates with filter
-- [ ] Add `markAllRead(category?: string)` to `api.ts`
-- [ ] Add "Mark all read" button in `Header.tsx` (visible when there are unread articles)
-- [ ] Add confirmation: brief "Marked X articles as read" toast notification
+- [x] Add `POST /api/articles/mark-all-read` endpoint to `main.py` (filter-aware)
+- [x] Add `markAllRead(filters?)` to `api.ts`
+- [x] Add "Mark all read" button in `Header.tsx` (visible when there are unread articles)
+- [x] Brief inline "Done!" feedback on button (1.5s)
 - [ ] Update `allArticles` state in `NewsGrid.tsx` optimistically (set all `is_read: true`)
 - [ ] Create simple `Toast.tsx` component for non-intrusive feedback messages
 

@@ -39,6 +39,7 @@ export interface ArticleFilters {
   search?: string;
   isSaved?: boolean;
   fetchStatus?: "full" | "summary";
+  publishedAfter?: string;
   page?: number;
   perPage?: number;
 }
@@ -52,6 +53,7 @@ export const getArticles = (
   if (filters.search) p.set("search", filters.search);
   if (filters.isSaved !== undefined) p.set("is_saved", String(filters.isSaved));
   if (filters.fetchStatus) p.set("fetch_status", filters.fetchStatus);
+  if (filters.publishedAfter) p.set("published_after", filters.publishedAfter);
   if (filters.page) p.set("page", String(filters.page));
   if (filters.perPage) p.set("per_page", String(filters.perPage));
   const qs = p.toString();
@@ -69,6 +71,24 @@ export const markRead = (id: string): Promise<Article> =>
 
 export const resetSaved = (): Promise<{ cleared: number }> =>
   req("/api/articles/reset-saved", { method: "POST" });
+
+export const getUnreadCount = (): Promise<number> =>
+  req<{ totalItems: number }>("/api/articles?is_read=false&per_page=1").then(
+    (r) => r.totalItems
+  );
+
+export const markAllRead = (filters?: {
+  category?: string;
+  fetchStatus?: string;
+  publishedAfter?: string;
+}): Promise<{ marked: number }> => {
+  const p = new URLSearchParams();
+  if (filters?.category) p.set("category", filters.category);
+  if (filters?.fetchStatus) p.set("fetch_status", filters.fetchStatus);
+  if (filters?.publishedAfter) p.set("published_after", filters.publishedAfter);
+  const qs = p.toString();
+  return req(`/api/articles/mark-all-read${qs ? `?${qs}` : ""}`, { method: "POST" });
+};
 
 // ── Misc ───────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode via .dark on <html> */
+@variant dark (&:where(.dark, .dark *));
+
 /* ── Animated pastel gradient background ──────────────────────────────── */
 :root {
   --background: #dce8f8;
@@ -23,7 +26,28 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+/* ── Dark mode background ─────────────────────────────────────────────── */
+.dark body,
+.dark html {
+  background: linear-gradient(
+    135deg,
+    #1e1b2e 0%,
+    #1a2035 25%,
+    #0f2240 50%,
+    #1a1a2e 75%,
+    #1b1f3a 100%
+  );
+  animation: gradientShiftDark 20s ease infinite;
+  color: #e2e8f0;
+}
+
 @keyframes gradientShift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+@keyframes gradientShiftDark {
   0%   { background-position: 0%   50%; }
   50%  { background-position: 100% 50%; }
   100% { background-position: 0%   50%; }
@@ -63,6 +87,31 @@ body {
   background: rgba(255, 255, 255, 0.44);
   transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.10);
+}
+
+/* ── Dark glass overrides ─────────────────────────────────────────────── */
+.dark .glass {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+.dark .glass-strong {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark .glass-card {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+.dark .glass-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dark .glass-reading {
+  background: rgba(18, 18, 30, 0.94);
+  border-color: rgba(255, 255, 255, 0.10);
 }
 
 /* ── Mobile viewport fix ──────────────────────────────────────────────── */
@@ -130,6 +179,9 @@ html, body {
   line-height: 1.75;
   color: #1e1e2e;
 }
+.dark .article-content {
+  color: #d1d5db;
+}
 .article-content p {
   margin-bottom: 0.6em;
 }
@@ -140,9 +192,17 @@ html, body {
   margin: 1.5em 0 0.5em;
   color: #1a1a2e;
 }
+.dark .article-content h1,
+.dark .article-content h2,
+.dark .article-content h3 {
+  color: #e2e8f0;
+}
 .article-content a {
   color: #6366f1;
   text-decoration: underline;
+}
+.dark .article-content a {
+  color: #818cf8;
 }
 
 /* ── Fade-in animation ────────────────────────────────────────────────── */
@@ -198,6 +258,16 @@ html, body {
     rgba(255,255,255,0.1) 25%,
     rgba(255,255,255,0.4) 50%,
     rgba(255,255,255,0.1) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+}
+.dark .shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.03) 75%
   );
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite;

@@ -3,9 +3,12 @@
 import { useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
-import { Search, RefreshCw, Bookmark, X, Menu, Settings } from "lucide-react";
+import { Search, RefreshCw, Bookmark, X, Menu, Settings, LayoutGrid, List, CheckCheck, Moon, Sun } from "lucide-react";
 import { triggerRefresh, getStatus } from "@/lib/api";
 import type { FetchStatus } from "@/lib/types";
+import { useTheme } from "./ThemeProvider";
+
+type ViewStyle = "grid" | "list";
 
 interface Props {
   search: string;
@@ -14,6 +17,10 @@ interface Props {
   onToggleSaved: () => void;
   onRefreshed?: () => void;
   onOpenMobileSidebar?: () => void;
+  viewStyle?: ViewStyle;
+  onViewStyleChange?: (style: ViewStyle) => void;
+  hasUnread?: boolean;
+  onMarkAllRead?: () => void;
 }
 
 export default function Header({
@@ -23,9 +30,15 @@ export default function Header({
   onToggleSaved,
   onRefreshed,
   onOpenMobileSidebar,
+  viewStyle = "grid",
+  onViewStyleChange,
+  hasUnread,
+  onMarkAllRead,
 }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [markDone, setMarkDone] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const { data: status } = useSWR<FetchStatus>("status", getStatus, {
     refreshInterval: 30_000,
@@ -42,6 +55,13 @@ export default function Header({
     }
   }
 
+  async function handleMarkAllRead() {
+    if (!onMarkAllRead) return;
+    await onMarkAllRead();
+    setMarkDone(true);
+    setTimeout(() => setMarkDone(false), 1500);
+  }
+
   return (
     <header className="glass-strong rounded-2xl md:rounded-3xl px-3 py-3 md:px-5 md:py-4 flex items-center gap-2 md:gap-4">
       {/* Mobile menu button */}
@@ -50,7 +70,7 @@ export default function Header({
         className="md:hidden flex-shrink-0 p-2 -ml-1 rounded-xl glass active:bg-white/40 transition-all"
         aria-label="Open feed settings"
       >
-        <Menu className="w-5 h-5 text-gray-600" />
+        <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
       </button>
 
       {/* Logo */}
@@ -58,7 +78,7 @@ export default function Header({
         <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl md:rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center shadow-lg">
           <span className="text-base md:text-lg">📰</span>
         </div>
-        <span className="font-bold text-gray-800 text-base md:text-lg hidden sm:block">Personal News</span>
+        <span className="font-bold text-gray-800 dark:text-gray-100 text-base md:text-lg hidden sm:block">Personal News</span>
       </div>
 
       {/* Search — full on desktop, expandable on mobile */}
@@ -73,7 +93,7 @@ export default function Header({
           onChange={(e) => onSearch(e.target.value)}
           onBlur={() => { if (!search) setSearchOpen(false); }}
           autoFocus={searchOpen}
-          className="w-full glass rounded-xl md:rounded-2xl pl-9 pr-9 py-2 md:py-2.5 text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-indigo-300/60 transition-all"
+          className="w-full glass rounded-xl md:rounded-2xl pl-9 pr-9 py-2 md:py-2.5 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none focus:ring-2 focus:ring-indigo-300/60 transition-all"
         />
         {search && (
           <button
@@ -92,24 +112,56 @@ export default function Header({
           className="sm:hidden flex-shrink-0 p-2 rounded-xl glass active:bg-white/40 transition-all"
           aria-label="Search"
         >
-          <Search className="w-4.5 h-4.5 text-gray-600" />
+          <Search className="w-4.5 h-4.5 text-gray-600 dark:text-gray-300" />
         </button>
       )}
 
       {/* Controls */}
       <div className={`flex items-center gap-1.5 md:gap-2 flex-shrink-0 ${searchOpen ? "hidden sm:flex" : ""}`}>
+        {/* Dark mode toggle */}
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/40 active:bg-white/50 transition-all"
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <span className="hidden md:block">{theme === "dark" ? "Light" : "Dark"}</span>
+        </button>
+
+        {/* View style toggle */}
+        <button
+          onClick={() => onViewStyleChange?.(viewStyle === "grid" ? "list" : "grid")}
+          className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/40 active:bg-white/50 transition-all"
+          title={viewStyle === "grid" ? "Switch to list view" : "Switch to grid view"}
+        >
+          {viewStyle === "grid" ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
+          <span className="hidden md:block">{viewStyle === "grid" ? "List" : "Grid"}</span>
+        </button>
+
+        {/* Mark all read */}
+        {hasUnread && (
+          <button
+            onClick={handleMarkAllRead}
+            className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/40 active:bg-white/50 transition-all"
+            title="Mark all visible articles as read"
+          >
+            <CheckCheck className={`w-4 h-4 ${markDone ? "text-emerald-500" : ""}`} />
+            <span className="hidden md:block">{markDone ? "Done!" : "Mark read"}</span>
+          </button>
+        )}
+
         <button
           onClick={onToggleSaved}
           className={`flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl text-sm font-medium transition-all ${
             showSaved
-              ? "bg-indigo-100/70 text-indigo-700 border border-indigo-200/60"
-              : "glass text-gray-600 hover:bg-white/40 active:bg-white/50"
+              ? "bg-indigo-100/70 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-500/30"
+              : "glass text-gray-600 dark:text-gray-300 hover:bg-white/40 active:bg-white/50"
           }`}
           title="Show saved articles"
         >
           <Bookmark
             className={`w-4 h-4 transition-all duration-200 ${
-              showSaved ? "fill-indigo-500 text-indigo-500" : "fill-transparent"
+              showSaved ? "fill-indigo-500 text-indigo-500 dark:fill-indigo-400 dark:text-indigo-400" : "fill-transparent"
             }`}
           />
           <span className="hidden md:block">Saved</span>
@@ -118,7 +170,7 @@ export default function Header({
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 hover:bg-white/40 active:bg-white/50 transition-all disabled:opacity-60"
+          className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/40 active:bg-white/50 transition-all disabled:opacity-60"
           title="Refresh all feeds"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
@@ -127,7 +179,7 @@ export default function Header({
 
         <Link
           href="/manage"
-          className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 hover:bg-white/40 active:bg-white/50 transition-all"
+          className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl glass text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/40 active:bg-white/50 transition-all"
           title="Manage feeds & categories"
         >
           <Settings className="w-4 h-4" />

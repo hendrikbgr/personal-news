@@ -93,10 +93,10 @@ export default function ArticleModal({ articleId, onClose }: Props) {
     >
       <div className="glass-reading w-full sm:max-w-2xl h-full sm:h-auto sm:max-h-[92vh] sm:rounded-3xl flex flex-col shadow-2xl animate-fadeInUp">
         {/* Mobile header */}
-        <div className="sm:hidden flex items-center justify-between px-3 py-2.5 border-b border-white/30 flex-shrink-0">
+        <div className="sm:hidden flex items-center justify-between px-3 py-2.5 border-b border-white/30 dark:border-white/10 flex-shrink-0">
           <button
             onClick={stableClose}
-            className="flex items-center gap-1 p-1.5 -ml-1 rounded-xl active:bg-white/40 transition-all text-gray-600"
+            className="flex items-center gap-1 p-1.5 -ml-1 rounded-xl active:bg-white/40 transition-all text-gray-600 dark:text-gray-300"
           >
             <ChevronLeft className="w-5 h-5" />
             <span className="text-sm font-medium">Back</span>
@@ -116,18 +116,18 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                 rel="noopener noreferrer"
                 className="p-2 rounded-xl active:bg-white/40 transition-all"
               >
-                <ExternalLink className="w-5 h-5 text-gray-500" />
+                <ExternalLink className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               </a>
             </div>
           )}
         </div>
 
         {/* Desktop header */}
-        <div className="hidden sm:flex items-center justify-between px-5 py-4 border-b border-white/30 flex-shrink-0">
+        <div className="hidden sm:flex items-center justify-between px-5 py-4 border-b border-white/30 dark:border-white/10 flex-shrink-0">
           <div className="flex items-center gap-2">
             {article && <CategoryBadge category={article.category} size="md" />}
             {article?.expand?.feed_id && (
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
                 {article.expand.feed_id.emoji} {article.expand.feed_id.source}
               </span>
             )}
@@ -149,7 +149,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                   className="p-2 rounded-xl glass hover:bg-white/40 transition-all"
                   title="Open original article"
                 >
-                  <ExternalLink className="w-4 h-4 text-gray-500" />
+                  <ExternalLink className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 </a>
               </>
             )}
@@ -157,7 +157,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
               onClick={stableClose}
               className="p-2 rounded-xl glass hover:bg-white/40 transition-all"
             >
-              <X className="w-4 h-4 text-gray-500" />
+              <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
               <div className="sm:hidden flex items-center gap-2 mb-3">
                 <CategoryBadge category={article.category} size="md" />
                 {article.expand?.feed_id && (
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
                     {article.expand.feed_id.emoji}{" "}
                     {article.expand.feed_id.source}
                   </span>
@@ -192,12 +192,12 @@ export default function ArticleModal({ articleId, onClose }: Props) {
               </div>
 
               {/* Title */}
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 leading-snug mb-4 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 leading-snug mb-4 tracking-tight">
                 {article.title}
               </h1>
 
               {/* Meta row */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-gray-500 mb-5 pb-5 border-b border-white/40">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-gray-500 dark:text-gray-400 mb-5 pb-5 border-b border-white/40 dark:border-white/10">
                 {article.author && (
                   <span className="flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 flex-shrink-0" />
@@ -218,19 +218,19 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                     <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                     {readTime} min
                     {article.word_count ? (
-                      <span className="text-gray-400">
+                      <span className="text-gray-400 dark:text-gray-500">
                         · {article.word_count.toLocaleString()} words
                       </span>
                     ) : null}
                   </span>
                 )}
                 {article.fetch_status === "full" ? (
-                  <span className="flex items-center gap-1.5 text-emerald-600 font-medium">
+                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
                     <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                     Full article
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1.5 text-amber-500">
+                  <span className="flex items-center gap-1.5 text-amber-500 dark:text-amber-400">
                     <Rss className="w-3.5 h-3.5 flex-shrink-0" />
                     RSS only
                   </span>
@@ -252,26 +252,25 @@ export default function ArticleModal({ articleId, onClose }: Props) {
 
               {/* AI summary */}
               {hasSummary && (
-                <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-6 border-l-4 border-indigo-300/70">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 mb-2">
+                <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-6 border-l-4 border-indigo-300/70 dark:border-indigo-500/50">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-2">
                     Summary
                   </p>
-                  <p className="text-[15px] text-gray-700 leading-relaxed">
+                  <p className="text-[15px] text-gray-700 dark:text-gray-300 leading-relaxed">
                     {article.summary}
                   </p>
                 </div>
               )}
 
               {/* Full content */}
-              <div className="article-content text-[15px] sm:text-base text-gray-700">
+              <div className="article-content text-[15px] sm:text-base">
                 {hasFullContent ? (
                   <>
-                    {/* Lead: show RSS description as italic intro if different from content */}
                     {article.description &&
                       !article.content
                         .trim()
                         .startsWith(article.description.trim().slice(0, 60)) && (
-                        <p className="text-base text-gray-500 italic mb-4 pb-4 border-b border-white/40">
+                        <p className="text-base text-gray-500 dark:text-gray-400 italic mb-4 pb-4 border-b border-white/40 dark:border-white/10">
                           {article.description}
                         </p>
                       )}
@@ -282,13 +281,13 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                     <p>{article.description}</p>
                     <div className="mt-5 glass rounded-xl p-4 flex items-start gap-3">
                       <Rss className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         Only the RSS excerpt is available.{" "}
                         <a
                           href={article.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-indigo-500 underline"
+                          className="text-indigo-500 dark:text-indigo-400 underline"
                         >
                           Read the full story at{" "}
                           {article.expand?.feed_id?.source ?? "the source"}
@@ -302,15 +301,15 @@ export default function ArticleModal({ articleId, onClose }: Props) {
 
               {/* Keywords / topics */}
               {article.keywords && (
-                <div className="mt-6 pt-5 border-t border-white/40">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5">
+                <div className="mt-6 pt-5 border-t border-white/40 dark:border-white/10">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3 flex items-center gap-1.5">
                     <Hash className="w-3 h-3" /> Topics
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {article.keywords.split(",").map((kw) => (
                       <span
                         key={kw}
-                        className="px-3 py-1 text-xs glass rounded-full text-gray-600 font-medium"
+                        className="px-3 py-1 text-xs glass rounded-full text-gray-600 dark:text-gray-300 font-medium"
                       >
                         {kw.trim()}
                       </span>
@@ -320,18 +319,18 @@ export default function ArticleModal({ articleId, onClose }: Props) {
               )}
 
               {/* Footer */}
-              <div className="mt-6 pt-5 border-t border-white/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 sm:pb-0">
+              <div className="mt-6 pt-5 border-t border-white/40 dark:border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 sm:pb-0">
                 <a
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                  className="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors"
                 >
                   Read at {article.expand?.feed_id?.source ?? "source"}
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
                 {article.word_count && article.fetch_status === "full" && (
-                  <span className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <span className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
                     <BarChart2 className="w-3.5 h-3.5" />
                     {article.word_count.toLocaleString()} words · {readTime} min read
                   </span>
@@ -339,7 +338,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-gray-500">Article not found.</div>
+            <div className="p-8 text-center text-gray-500 dark:text-gray-400">Article not found.</div>
           )}
         </div>
       </div>

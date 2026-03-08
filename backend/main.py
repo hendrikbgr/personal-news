@@ -134,6 +134,7 @@ async def get_articles(
     search: Optional[str] = Query(None),
     is_saved: Optional[bool] = Query(None),
     fetch_status: Optional[str] = Query(None),
+    published_after: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(30, ge=1, le=100),
 ):
@@ -150,6 +151,9 @@ async def get_articles(
         filters.append(f"is_saved={str(is_saved).lower()}")
     if fetch_status in ("full", "summary"):
         filters.append(f"fetch_status='{fetch_status}'")
+    if published_after:
+        safe_date = published_after.replace("'", "")
+        filters.append(f"published_at >= '{safe_date}'")
 
     filter_str = "&&".join(filters)
     result = await pb.list_records(
@@ -200,6 +204,39 @@ async def mark_read(article_id: str):
         return updated
     except Exception:
         raise HTTPException(status_code=404, detail="Article not found")
+
+
+@app.post("/api/articles/mark-all-read")
+async def mark_all_read(
+    category: Optional[str] = Query(None),
+    fetch_status: Optional[str] = Query(None),
+    published_after: Optional[str] = Query(None),
+):
+    """Mark all unread articles as read, respecting current filters."""
+    filters = ["is_read=false"]
+    if category:
+        filters.append(f"category='{category}'")
+    if fetch_status in ("full", "summary"):
+        filters.append(f"fetch_status='{fetch_status}'")
+    if published_after:
+        safe_date = published_after.replace("'", "")
+        filters.append(f"published_at >= '{safe_date}'")
+    filter_str = "&&".join(filters)
+
+    total = 0
+    page = 1
+    while total < 500:  # safety cap
+        result = await pb.list_records("articles", page=page, per_page=100, filter=filter_str)
+        items = result.get("items", [])
+        if not items:
+            break
+        for article in items:
+            await pb.update_record("articles", article["id"], {"is_read": True})
+            total += 1
+        if result.get("page", 1) >= result.get("totalPages", 1):
+            break
+        page += 1
+    return {"marked": total}
 
 
 @app.post("/api/articles/reset-saved")

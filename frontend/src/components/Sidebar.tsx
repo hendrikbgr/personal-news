@@ -59,7 +59,7 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
           className="p-2 rounded-xl hover:bg-white/40 transition-all"
           title="Expand sidebar"
         >
-          <PanelLeftOpen className="w-4 h-4 text-gray-500" />
+          <PanelLeftOpen className="w-4 h-4 text-gray-500 dark:text-gray-400" />
         </button>
         <div className="flex flex-col gap-1.5 items-center mt-1">
           <button
@@ -90,7 +90,7 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
 
   return (
     <div className="glass-strong rounded-3xl p-4 h-full flex flex-col gap-1 overflow-y-auto sidebar-scroll">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 px-2 mb-2">
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 px-2 mb-2">
         Categories
       </h2>
 
@@ -98,8 +98,8 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
         onClick={() => onSelectCategory(null)}
         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
           selectedCategory === null
-            ? "glass-strong text-indigo-700 shadow-sm"
-            : "text-gray-600 hover:bg-white/30"
+            ? "glass-strong text-indigo-700 dark:text-indigo-300 shadow-sm"
+            : "text-gray-600 dark:text-gray-300 hover:bg-white/30"
         }`}
       >
         <span className="text-lg">📋</span>
@@ -123,7 +123,7 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 isSelected
                   ? `${s.bg} ${s.text} shadow-sm`
-                  : "text-gray-600 hover:bg-white/30"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-white/30"
               }`}
             >
               <span className="text-lg">{cat.emoji}</span>
@@ -141,13 +141,13 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
             </button>
 
             {isOpen && (
-              <div className="ml-4 mt-1 space-y-1 border-l-2 border-white/40 pl-3">
+              <div className="ml-4 mt-1 space-y-1 border-l-2 border-white/40 dark:border-white/10 pl-3">
                 {catFeeds.map((feed) => (
                   <div
                     key={feed.id}
                     className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg hover:bg-white/20 transition-all"
                   >
-                    <span className="flex items-center gap-2 text-xs text-gray-600 truncate">
+                    <span className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 truncate">
                       <span>{feed.emoji}</span>
                       <span className="truncate">{feed.name}</span>
                     </span>
@@ -155,7 +155,7 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
                       onClick={(e) => handleToggleFeed(e, feed)}
                       disabled={togglingId === feed.id}
                       className={`relative flex-shrink-0 w-9 h-5 rounded-full transition-all ${
-                        feed.is_active ? "bg-indigo-400" : "bg-gray-300"
+                        feed.is_active ? "bg-indigo-400" : "bg-gray-300 dark:bg-gray-600"
                       } ${togglingId === feed.id ? "opacity-50" : ""}`}
                       title={feed.is_active ? "Disable feed" : "Enable feed"}
                     >
@@ -168,7 +168,7 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
                   </div>
                 ))}
                 {catFeeds.length === 0 && (
-                  <p className="text-xs text-gray-400 py-1 px-2">No feeds available</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 py-1 px-2">No feeds available</p>
                 )}
               </div>
             )}
@@ -176,8 +176,8 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
         );
       })}
 
-      <div className="mt-auto pt-4 border-t border-white/30 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-gray-400 px-2">
+      <div className="mt-auto pt-4 border-t border-white/30 dark:border-white/10 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 px-2">
           <Rss className="w-3.5 h-3.5" />
           <span>Enable feeds to start reading</span>
         </div>
@@ -187,7 +187,7 @@ export default function Sidebar({ selectedCategory, onSelectCategory, onFeedsCha
             className="p-1.5 rounded-xl hover:bg-white/40 transition-all flex-shrink-0"
             title="Collapse sidebar"
           >
-            <PanelLeftClose className="w-4 h-4 text-gray-500" />
+            <PanelLeftClose className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           </button>
         )}
       </div>
