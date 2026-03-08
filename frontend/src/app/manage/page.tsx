@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import {
@@ -13,6 +13,8 @@ import {
   Rss,
   FolderOpen,
   AlertTriangle,
+  Terminal,
+  ChevronDown,
 } from "lucide-react";
 import type { Category, Feed } from "@/lib/types";
 import {
@@ -270,6 +272,98 @@ function ConfirmModal({
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Developer Logs ───────────────────────────────────────────────────────
+
+function lineColor(line: string): string {
+  if (/\b(ERROR|CRITICAL)\b/.test(line)) return "text-red-400";
+  if (/\b(WARNING|WARN)\b/.test(line)) return "text-amber-400";
+  if (/\bINFO\b/.test(line)) return "text-emerald-400";
+  if (/\bDEBUG\b/.test(line)) return "text-gray-600";
+  return "text-gray-300";
+}
+
+function DeveloperLogs() {
+  const [open, setOpen] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [paused, setPaused] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+
+  useEffect(() => {
+    if (!open) return;
+    const es = new EventSource("/api/logs/stream");
+    es.onmessage = (e) => {
+      if (pausedRef.current) return;
+      setLogs((prev) => [...prev.slice(-500), e.data]);
+    };
+    es.onerror = () => {
+      setLogs((prev) => [...prev, "⚠ connection lost — reconnecting…"]);
+    };
+    return () => es.close();
+  }, [open]);
+
+  useEffect(() => {
+    if (!paused) bottomRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [logs, paused]);
+
+  return (
+    <section className="glass-strong rounded-3xl p-5">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between"
+      >
+        <div className="flex items-center gap-2">
+          <Terminal className="w-5 h-5 text-gray-500" />
+          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">Developer</h2>
+        </div>
+        <ChevronDown
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              Live backend logs
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPaused((p) => !p)}
+                className="px-2.5 py-1 rounded-lg glass text-xs text-gray-500 hover:bg-white/40"
+              >
+                {paused ? "Resume" : "Pause"}
+              </button>
+              <button
+                onClick={() => setLogs([])}
+                className="px-2.5 py-1 rounded-lg glass text-xs text-gray-500 hover:bg-white/40"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+          <div className="bg-gray-950 rounded-2xl p-4 h-80 overflow-y-auto scrollbar-none font-mono text-xs leading-relaxed">
+            {logs.length === 0 ? (
+              <span className="text-gray-600">Waiting for logs…</span>
+            ) : (
+              logs.map((line, i) => (
+                <div key={i} className={`whitespace-pre-wrap break-all ${lineColor(line)}`}>
+                  {line}
+                </div>
+              ))
+            )}
+            <div ref={bottomRef} />
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -600,6 +694,9 @@ export default function ManagePage() {
           </button>
         </div>
       </section>
+
+      {/* ── Developer ──────────────────────────────────────── */}
+      <DeveloperLogs />
 
       {/* Reset database confirmation modal */}
       {showResetConfirm && (

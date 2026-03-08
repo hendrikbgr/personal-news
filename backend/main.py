@@ -11,7 +11,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from config import PORT
 from pocketbase import pb
@@ -338,6 +338,90 @@ async def get_stats():
         "active_feeds": active_feeds,
         "reading_minutes_week": reading_minutes_week,
     }
+
+
+# ── Live Logs (SSE) ───────────────────────────────────────────────────────
+
+DOCKER_CONTAINER = "personal-news"
+SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+
+
+async def _docker_running() -> bool:
+    """Return True if the Docker container is accessible and running."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "docker", "inspect", "--format", "{{.State.Running}}", DOCKER_CONTAINER,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=3)
+        return stdout.strip() == b"true"
+    except Exception:
+        return False
+
+
+@app.get("/api/logs/stream")
+async def stream_logs():
+    """Stream live backend logs as Server-Sent Events.
+
+    Tries 'docker logs -f' first (works when running locally with Docker).
+    Falls back to attaching a handler to the Python root logger (works
+    when running inside the container or without Docker).
+    """
+    if await _docker_running():
+        async def docker_gen():
+            proc = await asyncio.create_subprocess_exec(
+                "docker", "logs", "-f", "--tail", "200", "--timestamps", DOCKER_CONTAINER,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            try:
+                while True:
+                    try:
+                        line = await asyncio.wait_for(proc.stdout.readline(), timeout=10)
+                        if not line:
+                            break
+                        yield f"data: {line.decode('utf-8', errors='replace').rstrip()}\n\n"
+                    except asyncio.TimeoutError:
+                        yield ": keep-alive\n\n"
+            finally:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+
+        return StreamingResponse(docker_gen(), media_type="text/event-stream", headers=SSE_HEADERS)
+
+    # Fallback: attach a queue handler to the root Python logger
+    async def process_gen():
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue[str] = asyncio.Queue(maxsize=500)
+
+        class _QueueHandler(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                try:
+                    loop.call_soon_threadsafe(
+                        queue.put_nowait,
+                        self.format(record),
+                    )
+                except Exception:
+                    pass
+
+        handler = _QueueHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        root = logging.getLogger()
+        root.addHandler(handler)
+        try:
+            while True:
+                try:
+                    line = await asyncio.wait_for(queue.get(), timeout=15)
+                    yield f"data: {line}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keep-alive\n\n"
+        finally:
+            root.removeHandler(handler)
+
+    return StreamingResponse(process_gen(), media_type="text/event-stream", headers=SSE_HEADERS)
 
 
 # ── Refresh ───────────────────────────────────────────────────────────────
