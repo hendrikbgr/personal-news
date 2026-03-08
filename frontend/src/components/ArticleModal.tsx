@@ -11,12 +11,62 @@ import {
   ChevronLeft,
   FileText,
   Rss,
+  Hash,
+  BarChart2,
+  AlignLeft,
+  BookOpen,
+  Layers,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import type { Article } from "@/lib/types";
 import { getArticle, toggleSaved } from "@/lib/api";
 import CategoryBadge from "./CategoryBadge";
 import SaveButton from "./SaveButton";
+
+export type ViewMode = "summary" | "both" | "full";
+
+export function getStoredViewMode(): ViewMode {
+  if (typeof window === "undefined") return "both";
+  return (localStorage.getItem("article-view-mode") as ViewMode) ?? "both";
+}
+
+export function saveViewMode(mode: ViewMode) {
+  localStorage.setItem("article-view-mode", mode);
+}
+
+const VIEW_MODES = [
+  { value: "summary", label: "Summary", icon: <AlignLeft className="w-3 h-3" /> },
+  { value: "both", label: "Both", icon: <Layers className="w-3 h-3" /> },
+  { value: "full", label: "Full", icon: <BookOpen className="w-3 h-3" /> },
+];
+
+function ViewToggle({
+  mode,
+  onChange,
+}: {
+  mode: ViewMode;
+  onChange: (m: ViewMode) => void;
+}) {
+  return (
+    <div className="flex items-center gap-0.5 glass rounded-xl p-1">
+      {VIEW_MODES.map(({ value, label, icon }) => (
+        <button
+          key={value}
+          onClick={() => onChange(value as ViewMode)}
+          title={label}
+          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+            mode === value
+              ? "bg-white/80 text-gray-800 shadow-sm"
+              : "text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          {icon}
+          <span className="hidden sm:inline">{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 interface Props {
   articleId: string;
@@ -27,6 +77,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(getStoredViewMode);
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +105,11 @@ export default function ArticleModal({ articleId, onClose }: Props) {
     };
   }, [stableClose]);
 
+  function handleViewMode(mode: ViewMode) {
+    setViewMode(mode);
+    saveViewMode(mode);
+  }
+
   async function handleSave() {
     if (!article) return;
     try {
@@ -65,8 +121,18 @@ export default function ArticleModal({ articleId, onClose }: Props) {
   }
 
   const readTime = article?.word_count
-    ? `${Math.max(1, Math.round(article.word_count / 200))} min read`
+    ? Math.max(1, Math.round(article.word_count / 200))
     : null;
+
+  const hasSummary = !!(
+    article?.summary && article.summary !== article.description
+  );
+  const hasFullContent = !!(
+    article?.content && article.fetch_status === "full"
+  );
+
+  const showSummary = viewMode === "summary" || viewMode === "both";
+  const showContent = viewMode === "full" || viewMode === "both";
 
   return (
     <div
@@ -74,9 +140,8 @@ export default function ArticleModal({ articleId, onClose }: Props) {
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/30 backdrop-blur-sm"
       onClick={(e) => e.target === overlayRef.current && stableClose()}
     >
-      {/* Full-screen on mobile, centered modal on desktop */}
-      <div className="glass-reading w-full sm:max-w-3xl h-full sm:h-auto sm:max-h-[90vh] sm:rounded-3xl flex flex-col shadow-2xl animate-fadeInUp">
-        {/* Mobile header — sticky top bar with back button */}
+      <div className="glass-reading w-full sm:max-w-2xl h-full sm:h-auto sm:max-h-[92vh] sm:rounded-3xl flex flex-col shadow-2xl animate-fadeInUp">
+        {/* Mobile header */}
         <div className="sm:hidden flex items-center justify-between px-3 py-2.5 border-b border-white/30 flex-shrink-0">
           <button
             onClick={stableClose}
@@ -88,6 +153,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
           <div className="flex items-center gap-1.5">
             {article && (
               <>
+                <ViewToggle mode={viewMode} onChange={handleViewMode} />
                 <SaveButton
                   saved={saved}
                   onToggle={handleSave}
@@ -109,7 +175,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
         </div>
 
         {/* Desktop header */}
-        <div className="hidden sm:flex items-center justify-between p-5 border-b border-white/30 flex-shrink-0">
+        <div className="hidden sm:flex items-center justify-between px-5 py-4 border-b border-white/30 flex-shrink-0">
           <div className="flex items-center gap-2">
             {article && <CategoryBadge category={article.category} size="md" />}
             {article?.expand?.feed_id && (
@@ -121,6 +187,7 @@ export default function ArticleModal({ articleId, onClose }: Props) {
           <div className="flex items-center gap-2">
             {article && (
               <>
+                <ViewToggle mode={viewMode} onChange={handleViewMode} />
                 <SaveButton
                   saved={saved}
                   onToggle={handleSave}
@@ -149,7 +216,10 @@ export default function ArticleModal({ articleId, onClose }: Props) {
         </div>
 
         {/* Body */}
-        <div ref={contentRef} className="flex-1 overflow-y-auto overscroll-contain">
+        <div
+          ref={contentRef}
+          className="flex-1 overflow-y-auto overscroll-contain"
+        >
           {loading ? (
             <div className="p-6 sm:p-8 space-y-4">
               <div className="h-6 shimmer rounded-full" />
@@ -157,62 +227,82 @@ export default function ArticleModal({ articleId, onClose }: Props) {
               <div className="h-48 shimmer rounded-2xl" />
               <div className="space-y-3">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className={`h-4 shimmer rounded-full ${i % 3 === 2 ? "w-2/3" : ""}`} />
+                  <div
+                    key={i}
+                    className={`h-4 shimmer rounded-full ${i % 3 === 2 ? "w-2/3" : ""}`}
+                  />
                 ))}
               </div>
             </div>
           ) : article ? (
-            <div className="p-5 sm:p-6 md:p-8">
-              {/* Mobile category badge */}
+            <div className="p-5 sm:p-7">
+              {/* Mobile category + source */}
               <div className="sm:hidden flex items-center gap-2 mb-3">
                 <CategoryBadge category={article.category} size="md" />
                 {article.expand?.feed_id && (
                   <span className="text-sm text-gray-500">
-                    {article.expand.feed_id.emoji} {article.expand.feed_id.source}
+                    {article.expand.feed_id.emoji}{" "}
+                    {article.expand.feed_id.source}
                   </span>
                 )}
               </div>
 
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 leading-tight mb-4">
+              {/* Title */}
+              <h1 className="text-xl sm:text-2xl md:text-[1.65rem] font-bold text-gray-800 leading-snug mb-4 tracking-tight">
                 {article.title}
               </h1>
 
-              {/* Meta */}
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-gray-500 mb-5 sm:mb-6">
+              {/* Meta row */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-gray-500 mb-5 pb-5 border-b border-white/40">
                 {article.author && (
-                  <span className="flex items-center gap-1">
-                    <User className="w-3.5 h-3.5" />
-                    <span className="truncate max-w-[150px]">{article.author}</span>
+                  <span className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="truncate max-w-[180px]">
+                      {article.author}
+                    </span>
                   </span>
                 )}
                 {article.published_at && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {format(new Date(article.published_at), "MMM d, yyyy")}
+                  <span
+                    className="flex items-center gap-1.5"
+                    title={format(
+                      new Date(article.published_at),
+                      "MMM d, yyyy 'at' h:mm a"
+                    )}
+                  >
+                    <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                    {formatDistanceToNow(new Date(article.published_at), {
+                      addSuffix: true,
+                    })}
                   </span>
                 )}
                 {readTime && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {readTime}
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                    {readTime} min read
+                    {article.word_count ? (
+                      <span className="text-gray-400">
+                        · {article.word_count.toLocaleString()} words
+                      </span>
+                    ) : null}
                   </span>
                 )}
                 {article.fetch_status === "full" ? (
-                  <span className="flex items-center gap-1 text-emerald-600">
-                    <FileText className="w-3.5 h-3.5" />
+                  <span className="flex items-center gap-1.5 text-emerald-600 font-medium">
+                    <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                     Full article
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-amber-600">
-                    <Rss className="w-3.5 h-3.5" />
-                    RSS summary
+                  <span className="flex items-center gap-1.5 text-amber-500">
+                    <Rss className="w-3.5 h-3.5 flex-shrink-0" />
+                    RSS only
                   </span>
                 )}
               </div>
 
               {/* Hero image */}
               {article.image_url && (
-                <div className="relative h-48 sm:h-64 md:h-80 -mx-5 sm:mx-0 sm:rounded-2xl overflow-hidden mb-5 sm:mb-6">
+                <div className="relative h-52 sm:h-72 -mx-5 sm:mx-0 sm:rounded-2xl overflow-hidden mb-6">
                   <Image
                     src={article.image_url}
                     alt={article.title}
@@ -223,54 +313,116 @@ export default function ArticleModal({ articleId, onClose }: Props) {
                 </div>
               )}
 
-              {/* Summary box */}
-              {article.summary && article.summary !== article.description && (
-                <div className="glass rounded-xl sm:rounded-2xl p-4 mb-5 sm:mb-6 border-l-4 border-indigo-300">
-                  <p className="text-sm font-medium text-indigo-800 mb-1">Summary</p>
-                  <p className="text-sm text-gray-700 leading-relaxed">{article.summary}</p>
+              {/* Summary section */}
+              {showSummary && hasSummary && (
+                <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-6 border-l-4 border-indigo-300/70">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 mb-2">
+                    AI Summary
+                  </p>
+                  <p className="text-[15px] text-gray-700 leading-relaxed">
+                    {article.summary}
+                  </p>
                 </div>
               )}
 
-              {/* Full content or description */}
-              <div className="article-content text-[15px] sm:text-base leading-relaxed">
-                {article.content ? (
-                  article.content.split("\n").map((para, i) =>
-                    para.trim() ? <p key={i}>{para}</p> : <br key={i} />
-                  )
-                ) : (
-                  <p>{article.description}</p>
-                )}
-              </div>
+              {/* If summary mode but no summary, show description */}
+              {showSummary && !hasSummary && !showContent && (
+                <p className="text-[15px] sm:text-base text-gray-700 leading-relaxed mb-6">
+                  {article.description}
+                </p>
+              )}
+
+              {/* Full content / description */}
+              {showContent && (
+                <div className="article-content text-[15px] sm:text-base leading-[1.85] text-gray-700">
+                  {hasFullContent ? (
+                    <>
+                      {/* Description as lead paragraph when different from content start */}
+                      {article.description &&
+                        !article.content
+                          .trim()
+                          .startsWith(article.description.trim().slice(0, 60)) && (
+                          <p className="text-base sm:text-lg font-medium text-gray-600 leading-relaxed mb-5 pb-5 border-b border-white/40 italic">
+                            {article.description}
+                          </p>
+                        )}
+                      {article.content.split("\n").map((para, i) =>
+                        para.trim() ? (
+                          <p key={i}>{para}</p>
+                        ) : (
+                          <br key={i} />
+                        )
+                      )}
+                    </>
+                  ) : (
+                    <p>{article.description}</p>
+                  )}
+
+                  {/* RSS-only notice */}
+                  {!hasFullContent && (
+                    <div className="mt-5 glass rounded-xl p-4 flex items-start gap-3">
+                      <Rss className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-gray-500">
+                        Only the RSS excerpt was retrieved for this article.{" "}
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-500 underline"
+                        >
+                          Read the full story at{" "}
+                          {article.expand?.feed_id?.source ?? "the source"}
+                        </a>
+                        .
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Keywords */}
               {article.keywords && (
-                <div className="mt-5 sm:mt-6 pt-4 border-t border-white/30 flex flex-wrap gap-2">
-                  {article.keywords.split(",").map((kw) => (
-                    <span
-                      key={kw}
-                      className="px-2.5 py-1 text-xs glass rounded-full text-gray-600"
-                    >
-                      {kw.trim()}
-                    </span>
-                  ))}
+                <div className="mt-7 pt-5 border-t border-white/40">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5">
+                    <Hash className="w-3 h-3" /> Topics
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {article.keywords.split(",").map((kw) => (
+                      <span
+                        key={kw}
+                        className="px-3 py-1 text-xs glass rounded-full text-gray-600 font-medium"
+                      >
+                        {kw.trim()}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* Original link */}
-              <div className="mt-5 sm:mt-6 pt-4 border-t border-white/30 pb-4 sm:pb-0">
+              {/* Source + stats footer */}
+              <div className="mt-6 pt-5 border-t border-white/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 sm:pb-0">
                 <a
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-indigo-600 active:text-indigo-800 font-medium py-2"
+                  className="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
                 >
-                  Read full article at {article.expand?.feed_id?.source ?? "source"}
+                  Read at {article.expand?.feed_id?.source ?? "source"}
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
+                {article.word_count && article.fetch_status === "full" && (
+                  <span className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <BarChart2 className="w-3.5 h-3.5" />
+                    {article.word_count.toLocaleString()} words ·{" "}
+                    {readTime} min read
+                  </span>
+                )}
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-gray-500">Article not found.</div>
+            <div className="p-8 text-center text-gray-500">
+              Article not found.
+            </div>
           )}
         </div>
       </div>

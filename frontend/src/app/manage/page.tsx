@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import {
@@ -13,7 +13,12 @@ import {
   Rss,
   FolderOpen,
   AlertTriangle,
+  AlignLeft,
+  Layers,
+  BookOpen,
+  Settings2,
 } from "lucide-react";
+import { type ViewMode, saveViewMode } from "@/components/ArticleModal";
 import type { Category, Feed } from "@/lib/types";
 import {
   getCategories,
@@ -275,11 +280,43 @@ function ConfirmModal({
 
 // ── Main Page ────────────────────────────────────────────────────────────
 
+const VIEW_OPTIONS = [
+  {
+    value: "summary",
+    label: "Summary only",
+    desc: "Show the AI-generated summary. Great for quick scanning.",
+    icon: <AlignLeft className="w-4 h-4" />,
+  },
+  {
+    value: "both",
+    label: "Summary + full article",
+    desc: "Show the summary box followed by the full article text.",
+    icon: <Layers className="w-4 h-4" />,
+  },
+  {
+    value: "full",
+    label: "Full article only",
+    desc: "Show the complete article text without the summary box.",
+    icon: <BookOpen className="w-4 h-4" />,
+  },
+];
+
 export default function ManagePage() {
   const { data: categories = [], mutate: mutateCategories } = useSWR("categories", getCategories);
   const { data: feeds = [], mutate: mutateFeeds } = useSWR("feeds", () => getFeeds());
 
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("both");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("article-view-mode") as ViewMode | null;
+    if (stored) setViewMode(stored);
+  }, []);
+
+  function handleViewModeChange(mode: ViewMode) {
+    setViewMode(mode);
+    saveViewMode(mode);
+  }
   const [catForm, setCatForm] = useState<"add" | string | null>(null);
   const [feedForm, setFeedForm] = useState<"add" | string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: "category" | "feed"; id: string; name: string } | null>(null);
@@ -537,6 +574,45 @@ export default function ManagePage() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* ── Reading Preferences ─────────────────────────────────── */}
+      <section className="glass-strong rounded-3xl p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Settings2 className="w-5 h-5 text-gray-500" />
+          <h2 className="text-base font-bold text-gray-800">Reading Preferences</h2>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
+            Article view mode
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {VIEW_OPTIONS.map(({ value, label, desc, icon }) => (
+              <button
+                key={value}
+                onClick={() => handleViewModeChange(value as ViewMode)}
+                className={`flex flex-col gap-2 p-4 rounded-2xl border-2 text-left transition-all ${
+                  viewMode === value
+                    ? "border-indigo-400/70 bg-indigo-50/60"
+                    : "border-transparent glass hover:border-white/60"
+                }`}
+              >
+                <div className={`flex items-center gap-2 font-medium text-sm ${
+                  viewMode === value ? "text-indigo-700" : "text-gray-700"
+                }`}>
+                  <span className={viewMode === value ? "text-indigo-500" : "text-gray-400"}>
+                    {icon}
+                  </span>
+                  {label}
+                  {viewMode === value && (
+                    <span className="ml-auto w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
